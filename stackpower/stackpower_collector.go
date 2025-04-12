@@ -1,62 +1,51 @@
-package stackpower
+package stackports
 
 import (
 	"github.com/moeinshahcheraghi/cisco_exporter/collector"
 	"github.com/moeinshahcheraghi/cisco_exporter/rpc"
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
+	"log"
 )
-
-const prefix = "cisco_stackpower_"
 
 var (
-	totalPowerDesc  = prometheus.NewDesc(prefix+"total_power_watts", "Total stack power in watts", []string{"target", "stack_name", "mode", "topology"}, nil)
-	rsvdPowerDesc   = prometheus.NewDesc(prefix+"reserved_power_watts", "Reserved stack power in watts", []string{"target", "stack_name"}, nil)
-	allocPowerDesc  = prometheus.NewDesc(prefix+"allocated_power_watts", "Allocated stack power in watts", []string{"target", "stack_name"}, nil)
-	unusedPowerDesc = prometheus.NewDesc(prefix+"unused_power_watts", "Unused stack power in watts", []string{"target", "stack_name"}, nil)
-	switchCountDesc = prometheus.NewDesc(prefix+"switch_count", "Number of switches in stack", []string{"target", "stack_name"}, nil)
-	psCountDesc     = prometheus.NewDesc(prefix+"power_supply_count", "Number of power supplies in stack", []string{"target", "stack_name"}, nil)
+	stackPortStatusDesc = prometheus.NewDesc("cisco_stackports_status", "Stack port status (1=OK, 0=Not OK)", []string{"target", "switch", "port"}, nil)
 )
 
-type stackPowerCollector struct{}
+type stackPortsCollector struct{}
 
 func NewCollector() collector.RPCCollector {
-	return &stackPowerCollector{}
+	return &stackPortsCollector{}
 }
 
-func (*stackPowerCollector) Name() string { return "StackPower" }
-
-func (*stackPowerCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- totalPowerDesc
-	ch <- rsvdPowerDesc
-	ch <- allocPowerDesc
-	ch <- unusedPowerDesc
-	ch <- switchCountDesc
-	ch <- psCountDesc
+func (c *stackPortsCollector) Name() string {
+	return "StackPorts"
 }
 
-func (*stackPowerCollector) Collect(client *rpc.Client, ch chan<- prometheus.Metric, labels []string) error {
-	out, err := client.RunCommand("show stack-power")
+func (c *stackPortsCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- stackPortStatusDesc
+}
+
+func (c *stackPortsCollector) Collect(client *rpc.Client, ch chan<- prometheus.Metric, labels []string) error {
+	out, err := client.RunCommand("show switch stack-ports")
 	if err != nil {
-		log.Errorln("StackPower command failed:", err)
+		log.Println("Failed to run stack-port command:", err)
 		return err
 	}
 
-	stacks, err := ParseStackPower(out)
-	if err != nil {
-		log.Errorln("StackPower parsing error:", err)
-		return err
-	}
-
-	for _, stack := range stacks {
-		l := []string{labels[0], stack.Name}
-
-		ch <- prometheus.MustNewConstMetric(totalPowerDesc, prometheus.GaugeValue, stack.TotalPower, labels[0], stack.Name, stack.Mode, stack.Topology)
-		ch <- prometheus.MustNewConstMetric(rsvdPowerDesc, prometheus.GaugeValue, stack.ReservedPower, l...)
-		ch <- prometheus.MustNewConstMetric(allocPowerDesc, prometheus.GaugeValue, stack.AllocatedPower, l...)
-		ch <- prometheus.MustNewConstMetric(unusedPowerDesc, prometheus.GaugeValue, stack.UnusedPower, l...)
-		ch <- prometheus.MustNewConstMetric(switchCountDesc, prometheus.GaugeValue, float64(stack.NumSwitches), l...)
-		ch <- prometheus.MustNewConstMetric(psCountDesc, prometheus.GaugeValue, float64(stack.NumPowerSupplies), l...)
+	lines := strings.Split(out, "\n")
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		if len(fields) == 3 && fields[0] != "Switch#" {
+			switchNum := fields[0]
+			for i, status := range fields[1:] {
+				port := "Port" + strconv.Itoa(i+1)
+				val := 0.0
+				if status == "OK" {
+					val = 1.0
+				}
+				ch <- prometheus.MustNewConstMetric(stackPortStatusDesc, prometheus.GaugeValue, val, labels[0], switchNum, port)
+			}
+		}
 	}
 
 	return nil
