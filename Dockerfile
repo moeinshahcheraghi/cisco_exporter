@@ -1,11 +1,11 @@
-FROM golang as builder
+FROM repo-afra.snappfood.dev/golang as builder
 ADD . /go/cisco_exporter/
 WORKDIR /go/cisco_exporter
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /go/bin/cisco_exporter
 
-FROM alpine
+FROM repo-afra.snappfood.dev/alpine
 ENV SSH_KEYFILE ""
-ENV CONFIG_FILE "/config.yml"
+ENV CONFIG_FILE "/config/config.yml"
 ENV CMD_FLAGS ""
 RUN apk --no-cache add ca-certificates
 WORKDIR /app
