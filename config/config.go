@@ -19,6 +19,7 @@ type Config struct {
 	KeyFile       string          `yaml:"key_file,omitempty"`
 	Devices       []*DeviceConfig `yaml:"devices,omitempty"`
 	Features      *FeatureConfig  `yaml:"features,omitempty"`
+	StackEnabled  bool 			  `yaml:"stack_enabled"`
 }
 
 // DeviceConfig is the config representation of 1 device
@@ -40,8 +41,7 @@ type FeatureConfig struct {
 	Facts       *bool `yaml:"facts,omitempty"`
 	Interfaces  *bool `yaml:"interfaces,omitempty"`
 	Optics      *bool `yaml:"optics,omitempty"`
-	StackPorts *bool `yaml:"stack_ports,omitempty"`
-	Temperature *bool `yaml:"temperature,omitempty"`
+	Stack       *bool `yaml:"stack"`
 }
 
 // New creates a new config
@@ -96,10 +96,7 @@ func (c *Config) setDefaultValues() {
 	c.LegacyCiphers = false
 	c.Timeout = 5
 	c.BatchSize = 10000
-	stackPorts := true
-	f.StackPorts = &stackPorts
-	temperature := true
-	f.Temperature = &temperature	
+
 	f := c.Features
 	bgp := true
 	f.BGP = &bgp

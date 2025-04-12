@@ -19,6 +19,7 @@ const version string = "0.2"
 
 var (
 	showVersion        = flag.Bool("version", false, "Print version information.")
+	stackEnabled       = flag.Bool("stack.enabled", true, "Scrape stack metrics")
 	listenAddress      = flag.String("web.listen-address", ":9362", "Address on which to expose metrics and web interface.")
 	metricsPath        = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
 	sshHosts           = flag.String("ssh.targets", "", "SSH Hosts to scrape")
@@ -102,7 +103,7 @@ func loadConfigFromFlags() *config.Config {
 	c.BatchSize = *sshBatchSize
 	c.Username = *sshUsername
 	c.Password = *sshPassword
-
+	f.Stack = stackEnabled
 	c.KeyFile = *sshKeyFile
 
 	c.DevicesFromTargets(*sshHosts)

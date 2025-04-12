@@ -9,9 +9,7 @@ import (
 	"github.com/moeinshahcheraghi/cisco_exporter/facts"
 	"github.com/moeinshahcheraghi/cisco_exporter/interfaces"
 	"github.com/moeinshahcheraghi/cisco_exporter/optics"
-	"github.com/moeinshahcheraghi/cisco_exporter/stackports"
-	"github.com/moeinshahcheraghi/cisco_exporter/temperature"
-	
+	"github.com/moeinshahcheraghi/cisco_exporter/stack"
 )
 
 type collectors struct {
@@ -43,10 +41,7 @@ func (c *collectors) initCollectorsForDevice(device *connector.Device) {
 	c.addCollectorIfEnabledForDevice(device, "facts", f.Facts, facts.NewCollector)
 	c.addCollectorIfEnabledForDevice(device, "interfaces", f.Interfaces, interfaces.NewCollector)
 	c.addCollectorIfEnabledForDevice(device, "optics", f.Optics, optics.NewCollector)
-
-	c.addCollectorIfEnabledForDevice(device, "stack_ports", f.StackPorts, stackports.NewCollector)
-	c.addCollectorIfEnabledForDevice(device, "temperature", f.Temperature, temperature.NewCollector)
-	
+	c.addCollectorIfEnabledForDevice(device, "stack", f.Stack, stack.NewCollector)
 }
 
 func (c *collectors) addCollectorIfEnabledForDevice(device *connector.Device, key string, enabled *bool, newCollector func() collector.RPCCollector) {
