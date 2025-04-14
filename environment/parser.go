@@ -8,25 +8,26 @@ import (
 	"github.com/moeinshahcheraghi/cisco_exporter/util"
 )
 
-func (c *environmentCollector) Parse(ostype string, output string) ([]EnvironmentItem, error) {
+// ✅ Exported function for parsing
+func Parse(ostype string, output string) ([]EnvironmentItem, error) {
 	if ostype != rpc.IOSXE && ostype != rpc.NXOS && ostype != rpc.IOS {
 		return nil, errors.New("'show environment' is not implemented for " + ostype)
 	}
 
 	items := []EnvironmentItem{}
-
 	lines := strings.Split(output, "\n")
 	var currentSwitch string
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 
-		// Identify current switch for labeling (e.g., "Switch 1:")
+		// Detect Switch N:
 		if strings.HasPrefix(line, "Switch ") && strings.Contains(line, ":") {
 			currentSwitch = strings.Split(line, ":")[0]
 			continue
 		}
 
-		// Inlet or Hotspot temperature
+		// Inlet / Hotspot temperatures
 		if strings.HasPrefix(line, "Inlet Temperature Value:") || strings.HasPrefix(line, "Hotspot Temperature Value:") {
 			parts := strings.Split(line, ":")
 			if len(parts) == 2 {
@@ -42,7 +43,7 @@ func (c *environmentCollector) Parse(ostype string, output string) ([]Environmen
 			}
 		}
 
-		// FAN or PSU status
+		// FAN or PSU status lines
 		if strings.Contains(line, "FAN") && strings.Contains(line, "is OK") {
 			items = append(items, EnvironmentItem{
 				Name:   line,
@@ -52,7 +53,7 @@ func (c *environmentCollector) Parse(ostype string, output string) ([]Environmen
 			})
 		}
 
-		// Parse PSU table (last section)
+		// PSU table at the bottom
 		if strings.HasPrefix(line, "1A") || strings.HasPrefix(line, "1B") || strings.HasPrefix(line, "2A") || strings.HasPrefix(line, "2B") {
 			fields := strings.Fields(line)
 			if len(fields) >= 4 {
@@ -68,5 +69,6 @@ func (c *environmentCollector) Parse(ostype string, output string) ([]Environmen
 			}
 		}
 	}
+
 	return items, nil
 }
