@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/lwlcom/cisco_exporter/rpc"
-	"github.com/lwlcom/cisco_exporter/util"
+	"github.com/moeinshahcheraghi/cisco_exporter/rpc"
+	"github.com/moeinshahcheraghi/cisco_exporter/util"
 )
 
 // ParseInterfaces parses cli output and returns list of interface names

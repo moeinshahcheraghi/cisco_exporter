@@ -5,8 +5,8 @@ import (
 
 	"sync"
 
-	"github.com/lwlcom/cisco_exporter/connector"
-	"github.com/lwlcom/cisco_exporter/rpc"
+	"github.com/moeinshahcheraghi/cisco_exporter/connector"
+	"github.com/moeinshahcheraghi/cisco_exporter/rpc"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
