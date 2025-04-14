@@ -9,39 +9,64 @@ import (
 	"github.com/moeinshahcheraghi/cisco_exporter/util"
 )
 
-// Parse parses cli output and tries to find oll temperature and power related data
 func (c *environmentCollector) Parse(ostype string, output string) ([]EnvironmentItem, error) {
 	if ostype != rpc.IOSXE && ostype != rpc.NXOS && ostype != rpc.IOS {
-		return nil, errors.New("'show environment all' is not implemented for " + ostype)
+		return nil, errors.New("'show environment' is not implemented for " + ostype)
 	}
+
 	items := []EnvironmentItem{}
-	tempRegexp := make(map[string]*regexp.Regexp)
-	powerRegexp := make(map[string]*regexp.Regexp)
-	tempRegexp[rpc.IOSXE], _ = regexp.Compile(`\s*(\w\w)\s*Temp: (\w+)\s+\w+\s+(\d+) Celsius`)
-	powerRegexp[rpc.IOSXE], _ = regexp.Compile(`\s*(\w\w)\s*PEM (\w+)\s+(\w+)\s+\d*\s[\s\w]*`)
-	tempRegexp[rpc.IOS], _ = regexp.Compile(`^(\d+)\s+(air \w+(?: +\w+)?)\s+(\d+)C \(.*\)\s+\w+$`)
-	powerRegexp[rpc.IOS], _ = regexp.Compile(`^(\w+)\s+.+\s+(AC) \w+\s+(\w+)\s+\w+\s+.+\s+.+$`)
-	tempRegexp[rpc.NXOS], _ = regexp.Compile(`^(\d+)\s+(.+)\s+\d\d?\s+\d\d?\s+(\d\d?)\s+\w+\s*$`)
-	powerRegexp[rpc.NXOS], _ = regexp.Compile(`^(\d+)\s+.+\s+(AC)\s+.+\s+.+\s+(\w+)\s*$`)
 
 	lines := strings.Split(output, "\n")
+	var currentSwitch string
 	for _, line := range lines {
-		if matches := tempRegexp[ostype].FindStringSubmatch(line); matches != nil {
-			x := EnvironmentItem{
-				Name:        strings.TrimSpace(matches[1] + " " + matches[2]),
-				IsTemp:      true,
-				Temperature: util.Str2float64(matches[3]),
+		line = strings.TrimSpace(line)
+
+		// Identify current switch for labeling (e.g., "Switch 1:")
+		if strings.HasPrefix(line, "Switch ") && strings.Contains(line, ":") {
+			currentSwitch = strings.Split(line, ":")[0]
+			continue
+		}
+
+		// Inlet or Hotspot temperature
+		if strings.HasPrefix(line, "Inlet Temperature Value:") || strings.HasPrefix(line, "Hotspot Temperature Value:") {
+			parts := strings.Split(line, ":")
+			if len(parts) == 2 {
+				name := strings.TrimSpace(parts[0])
+				tempStr := strings.TrimSpace(strings.Replace(parts[1], "Degree Celsius", "", 1))
+				temp := util.Str2float64(tempStr)
+
+				items = append(items, EnvironmentItem{
+					Name:        currentSwitch + " " + name,
+					IsTemp:      true,
+					Temperature: temp,
+				})
 			}
-			items = append(items, x)
-		} else if matches := powerRegexp[ostype].FindStringSubmatch(line); matches != nil {
-			ok := matches[3] == "Normal" || matches[3] == "good" || matches[3] == "ok"
-			x := EnvironmentItem{
-				Name:   strings.TrimSpace(matches[1] + " " + matches[2]),
+		}
+
+		// FAN or PSU status
+		if strings.Contains(line, "FAN") && strings.Contains(line, "is OK") {
+			items = append(items, EnvironmentItem{
+				Name:   line,
 				IsTemp: false,
-				OK:     ok,
-				Status: matches[3],
+				OK:     true,
+				Status: "OK",
+			})
+		}
+
+		// Parse PSU table (last section)
+		if strings.HasPrefix(line, "1A") || strings.HasPrefix(line, "1B") || strings.HasPrefix(line, "2A") || strings.HasPrefix(line, "2B") {
+			fields := strings.Fields(line)
+			if len(fields) >= 4 {
+				name := fields[0] + " " + fields[1]
+				status := fields[3]
+				ok := status == "OK"
+				items = append(items, EnvironmentItem{
+					Name:   name,
+					IsTemp: false,
+					OK:     ok,
+					Status: status,
+				})
 			}
-			items = append(items, x)
 		}
 	}
 	return items, nil
