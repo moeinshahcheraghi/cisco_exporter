@@ -2,7 +2,6 @@ package interfaces
 
 import (
 	"errors"
-	"regexp"
 	"strings"
 
 	"github.com/moeinshahcheraghi/cisco_exporter/rpc"

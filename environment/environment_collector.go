@@ -2,8 +2,6 @@ package environment
 
 import (
 	"log"
-	"errors"
-	"strings"
 
 	"github.com/moeinshahcheraghi/cisco_exporter/rpc"
 	"github.com/moeinshahcheraghi/cisco_exporter/collector"
