@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/moeinshahcheraghi/cisco_exporter/config"
-	"github.com/moeinshahcheraghi/cisco_exporter/connector"
+	"github.com/lwlcom/cisco_exporter/config"
+	"github.com/lwlcom/cisco_exporter/connector"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -19,7 +19,6 @@ const version string = "0.2"
 
 var (
 	showVersion        = flag.Bool("version", false, "Print version information.")
-	stackEnabled       = flag.Bool("stack.enabled", true, "Scrape stack metrics")
 	listenAddress      = flag.String("web.listen-address", ":9362", "Address on which to expose metrics and web interface.")
 	metricsPath        = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
 	sshHosts           = flag.String("ssh.targets", "", "SSH Hosts to scrape")
@@ -103,7 +102,7 @@ func loadConfigFromFlags() *config.Config {
 	c.BatchSize = *sshBatchSize
 	c.Username = *sshUsername
 	c.Password = *sshPassword
-	f.Stack = stackEnabled
+
 	c.KeyFile = *sshKeyFile
 
 	c.DevicesFromTargets(*sshHosts)
@@ -134,7 +133,7 @@ func startServer() {
 			<h1>Cisco Exporter</h1>
 			<p><a href="` + *metricsPath + `">Metrics</a></p>
 			<h2>More information:</h2>
-			<p><a href="https://github.com/moeinshahcheraghi/cisco_exporter">github.com/moeinshahcheraghi/cisco_exporter</a></p>
+			<p><a href="https://github.com/lwlcom/cisco_exporter">github.com/lwlcom/cisco_exporter</a></p>
 			</body>
 			</html>`))
 	})

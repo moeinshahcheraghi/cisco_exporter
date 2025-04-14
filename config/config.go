@@ -19,7 +19,6 @@ type Config struct {
 	KeyFile       string          `yaml:"key_file,omitempty"`
 	Devices       []*DeviceConfig `yaml:"devices,omitempty"`
 	Features      *FeatureConfig  `yaml:"features,omitempty"`
-	StackEnabled  bool 			  `yaml:"stack_enabled"`
 }
 
 // DeviceConfig is the config representation of 1 device
@@ -41,7 +40,6 @@ type FeatureConfig struct {
 	Facts       *bool `yaml:"facts,omitempty"`
 	Interfaces  *bool `yaml:"interfaces,omitempty"`
 	Optics      *bool `yaml:"optics,omitempty"`
-	Stack       *bool `yaml:"stack"`
 }
 
 // New creates a new config

@@ -7,7 +7,7 @@ import (
 
 	"log"
 
-	"github.com/moeinshahcheraghi/cisco_exporter/connector"
+	"github.com/lwlcom/cisco_exporter/connector"
 )
 
 const (
