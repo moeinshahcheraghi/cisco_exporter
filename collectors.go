@@ -9,6 +9,7 @@ import (
 	"github.com/moeinshahcheraghi/cisco_exporter/facts"
 	"github.com/moeinshahcheraghi/cisco_exporter/interfaces"
 	"github.com/moeinshahcheraghi/cisco_exporter/optics"
+	"github.com/moeinshahcheraghi/cisco_exporter/stackport"
 )
 
 type collectors struct {

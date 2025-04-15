@@ -4,11 +4,9 @@ import (
 	"time"
 
 	"sync"
-	"github.com/moeinshahcheraghi/cisco_exporter/collector"
 	"github.com/moeinshahcheraghi/cisco_exporter/connector"
 	"github.com/moeinshahcheraghi/cisco_exporter/rpc"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/moeinshahcheraghi/cisco_exporter/stackport"
 	log "github.com/sirupsen/logrus"
 )
 
