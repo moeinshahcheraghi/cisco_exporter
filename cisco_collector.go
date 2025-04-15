@@ -8,6 +8,7 @@ import (
 	"github.com/moeinshahcheraghi/cisco_exporter/connector"
 	"github.com/moeinshahcheraghi/cisco_exporter/rpc"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/moeinshahcheraghi/cisco_exporter/stackport"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,6 +19,13 @@ var (
 	scrapeDurationDesc          *prometheus.Desc
 	upDesc                      *prometheus.Desc
 )
+
+func (c *collectors) initCollectorsForDevice(device *connector.Device) {
+	f := c.cfg.FeaturesForDevice(device.Host)
+	
+	c.devices[device.Host] = make([]collector.RPCCollector, 0)
+	c.addCollectorIfEnabledForDevice(device, "stackport", f.StackPort, stackport.NewCollector) 
+
 
 func init() {
 	upDesc = prometheus.NewDesc(prefix+"up", "Scrape of target was successful", []string{"target"}, nil)

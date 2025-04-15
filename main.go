@@ -35,6 +35,7 @@ var (
 	interfacesEnabled  = flag.Bool("interfaces.enabled", true, "Scrape interface metrics")
 	opticsEnabled      = flag.Bool("optics.enabled", true, "Scrape optic metrics")
 	configFile         = flag.String("config.file", "", "Path to config file")
+	stackportEnabled = flag.Bool("stackport.enabled", true, "Scrape stack port metrics") 
 	devices            []*connector.Device
 	cfg                *config.Config
 )
@@ -95,13 +96,15 @@ func initialize() error {
 
 func loadConfigFromFlags() *config.Config {
 	c := config.New()
-
+	f := c.Features
+	f.StackPort = stackportEnabled 
 	c.Debug = *debug
 	c.LegacyCiphers = *legacyCiphers
 	c.Timeout = *sshTimeout
 	c.BatchSize = *sshBatchSize
 	c.Username = *sshUsername
 	c.Password = *sshPassword
+
 
 	c.KeyFile = *sshKeyFile
 

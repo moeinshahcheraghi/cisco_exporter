@@ -40,6 +40,7 @@ type FeatureConfig struct {
 	Facts       *bool `yaml:"facts,omitempty"`
 	Interfaces  *bool `yaml:"interfaces,omitempty"`
 	Optics      *bool `yaml:"optics,omitempty"`
+	StackPort  	*bool `yaml:"stack_port"`
 }
 
 // New creates a new config
