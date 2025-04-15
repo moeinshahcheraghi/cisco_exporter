@@ -40,6 +40,7 @@ func (c *collectors) initCollectorsForDevice(device *connector.Device) {
 	c.addCollectorIfEnabledForDevice(device, "facts", f.Facts, facts.NewCollector)
 	c.addCollectorIfEnabledForDevice(device, "interfaces", f.Interfaces, interfaces.NewCollector)
 	c.addCollectorIfEnabledForDevice(device, "optics", f.Optics, optics.NewCollector)
+	c.addCollectorIfEnabledForDevice(device, "stackport", f.StackPort, stackport.NewCollector) 
 
 }
 

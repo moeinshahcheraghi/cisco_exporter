@@ -96,21 +96,19 @@ func initialize() error {
 
 func loadConfigFromFlags() *config.Config {
 	c := config.New()
-	f := c.Features
-	f.StackPort = stackportEnabled 
+
 	c.Debug = *debug
 	c.LegacyCiphers = *legacyCiphers
 	c.Timeout = *sshTimeout
 	c.BatchSize = *sshBatchSize
 	c.Username = *sshUsername
 	c.Password = *sshPassword
-
-
 	c.KeyFile = *sshKeyFile
 
 	c.DevicesFromTargets(*sshHosts)
 
 	f := c.Features
+	f.StackPort = stackportEnabled
 	f.BGP = bgpEnabled
 	f.Environment = environmentEnabled
 	f.Facts = factsEnabled

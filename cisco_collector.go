@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"sync"
-
+	"github.com/moeinshahcheraghi/cisco_exporter/collector"
 	"github.com/moeinshahcheraghi/cisco_exporter/connector"
 	"github.com/moeinshahcheraghi/cisco_exporter/rpc"
 	"github.com/prometheus/client_golang/prometheus"
@@ -28,13 +28,6 @@ func init() {
 }
 
 
-
-func (c *collectors) initCollectorsForDevice(device *connector.Device) {
-	f := c.cfg.FeaturesForDevice(device.Host)
-	
-	c.devices[device.Host] = make([]collector.RPCCollector, 0)
-	c.addCollectorIfEnabledForDevice(device, "stackport", f.StackPort, stackport.NewCollector) 
-}
 type ciscoCollector struct {
 	devices    []*connector.Device
 	collectors *collectors
