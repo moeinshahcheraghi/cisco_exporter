@@ -20,12 +20,6 @@ var (
 	upDesc                      *prometheus.Desc
 )
 
-func (c *collectors) initCollectorsForDevice(device *connector.Device) {
-	f := c.cfg.FeaturesForDevice(device.Host)
-	
-	c.devices[device.Host] = make([]collector.RPCCollector, 0)
-	c.addCollectorIfEnabledForDevice(device, "stackport", f.StackPort, stackport.NewCollector) 
-
 
 func init() {
 	upDesc = prometheus.NewDesc(prefix+"up", "Scrape of target was successful", []string{"target"}, nil)
@@ -33,6 +27,14 @@ func init() {
 	scrapeCollectorDurationDesc = prometheus.NewDesc(prefix+"collect_duration_seconds", "Duration of a scrape by collector and target", []string{"target", "collector"}, nil)
 }
 
+
+
+func (c *collectors) initCollectorsForDevice(device *connector.Device) {
+	f := c.cfg.FeaturesForDevice(device.Host)
+	
+	c.devices[device.Host] = make([]collector.RPCCollector, 0)
+	c.addCollectorIfEnabledForDevice(device, "stackport", f.StackPort, stackport.NewCollector) 
+}
 type ciscoCollector struct {
 	devices    []*connector.Device
 	collectors *collectors
