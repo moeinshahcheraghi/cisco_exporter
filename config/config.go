@@ -8,7 +8,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// Config represents the configuration for the exporter
 type Config struct {
 	Debug         bool            `yaml:"debug"`
 	LegacyCiphers bool            `yaml:"legacy_ciphers,omitempty"`
@@ -21,7 +20,6 @@ type Config struct {
 	Features      *FeatureConfig  `yaml:"features,omitempty"`
 }
 
-// DeviceConfig is the config representation of 1 device
 type DeviceConfig struct {
 	Host          string         `yaml:"host"`
 	Username      *string        `yaml:"username,omitempty"`
@@ -33,27 +31,23 @@ type DeviceConfig struct {
 	Features      *FeatureConfig `yaml:"features,omitempty"`
 }
 
-// FeatureConfig is the list of collectors enabled or disabled
 type FeatureConfig struct {
 	BGP         *bool `yaml:"bgp,omitempty"`
 	Environment *bool `yaml:"environment,omitempty"`
 	Facts       *bool `yaml:"facts,omitempty"`
 	Interfaces  *bool `yaml:"interfaces,omitempty"`
 	Optics      *bool `yaml:"optics,omitempty"`
-	StackPort  	*bool `yaml:"stack_port"`
+	StackPort   *bool `yaml:"stack_port,omitempty"`
 }
 
-// New creates a new config
 func New() *Config {
 	c := &Config{
 		Features: &FeatureConfig{},
 	}
 	c.setDefaultValues()
-
 	return c
 }
 
-// Load loads a config from reader
 func Load(reader io.Reader) (*Config, error) {
 	b, err := ioutil.ReadAll(reader)
 	if err != nil {
@@ -85,6 +79,9 @@ func Load(reader io.Reader) (*Config, error) {
 		if d.Features.Optics == nil {
 			d.Features.Optics = c.Features.Optics
 		}
+		if d.Features.StackPort == nil {
+			d.Features.StackPort = c.Features.StackPort
+		}
 	}
 
 	return c, nil
@@ -107,9 +104,10 @@ func (c *Config) setDefaultValues() {
 	f.Interfaces = &interfaces
 	optics := true
 	f.Optics = &optics
+	stackPort := true
+	f.StackPort = &stackPort
 }
 
-// DevicesFromTargets creates devices configs from targets list
 func (c *Config) DevicesFromTargets(sshHosts string) {
 	targets := strings.Split(sshHosts, ",")
 
@@ -121,14 +119,11 @@ func (c *Config) DevicesFromTargets(sshHosts string) {
 	}
 }
 
-// FeaturesForDevice gets the feature set configured for a device
 func (c *Config) FeaturesForDevice(host string) *FeatureConfig {
 	d := c.findDeviceConfig(host)
-
 	if d != nil && d.Features != nil {
 		return d.Features
 	}
-
 	return c.Features
 }
 
@@ -138,6 +133,5 @@ func (c *Config) findDeviceConfig(host string) *DeviceConfig {
 			return dc
 		}
 	}
-
 	return nil
 }
