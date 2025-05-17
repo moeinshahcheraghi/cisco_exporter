@@ -32,12 +32,20 @@ type DeviceConfig struct {
 }
 
 type FeatureConfig struct {
-	BGP         *bool `yaml:"bgp,omitempty"`
-	Environment *bool `yaml:"environment,omitempty"`
-	Facts       *bool `yaml:"facts,omitempty"`
-	Interfaces  *bool `yaml:"interfaces,omitempty"`
-	Optics      *bool `yaml:"optics,omitempty"`
-	StackPort   *bool `yaml:"stack_port,omitempty"`
+	BGP           *bool `yaml:"bgp,omitempty"`
+	Environment   *bool `yaml:"environment,omitempty"`
+	Facts         *bool `yaml:"facts,omitempty"`
+	Interfaces    *bool `yaml:"interfaces,omitempty"`
+	Optics        *bool `yaml:"optics,omitempty"`
+	StackPort     *bool `yaml:"stack_port,omitempty"`
+	EtherChannel  *bool `yaml:"etherchannel,omitempty"`
+	SlotTemp      *bool `yaml:"slottemp,omitempty"`
+	LoginFailures *bool `yaml:"loginfailures,omitempty"`
+	ConfigLog     *bool `yaml:"configlog,omitempty"`
+	SpanningTree  *bool `yaml:"spanningtree,omitempty"`
+	Processes     *bool `yaml:"processes,omitempty"`
+	ARP           *bool `yaml:"arp,omitempty"`
+	CEF           *bool `yaml:"cef,omitempty"`
 }
 
 func New() *Config {
@@ -106,6 +114,22 @@ func (c *Config) setDefaultValues() {
 	f.Optics = &optics
 	stackPort := true
 	f.StackPort = &stackPort
+	etherchannel := true
+	f.EtherChannel = &etherchannel
+	slottemp := true
+	f.SlotTemp = &slottemp
+	loginfailures := true
+	f.LoginFailures = &loginfailures
+	configlog := true
+	f.ConfigLog = &configlog
+	spanningtree := true
+	f.SpanningTree = &spanningtree
+	processes := true
+	f.Processes = &processes
+	arp := true
+	f.ARP = &arp
+	cef := true
+	f.CEF = &cef
 }
 
 func (c *Config) DevicesFromTargets(sshHosts string) {

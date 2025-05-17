@@ -6,13 +6,24 @@ import (
 	"io/ioutil"
 	"regexp"
 	"strings"
-
 	"time"
-
+	"log"
 	"github.com/moeinshahcheraghi/cisco_exporter/config"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 )
+
+// SSHConnection encapsulates the connection to the device
+type SSHConnection struct {
+	client       *ssh.Client
+	Host         string
+	stdin        io.WriteCloser
+	stdout       io.Reader
+	session      *ssh.Session
+	batchSize    int
+	clientConfig *ssh.ClientConfig
+	Debug        bool // فیلد جدید برای پرچم دیباگ
+}
 
 // NewSSSHConnection connects to device
 func NewSSSHConnection(device *Device, cfg *config.Config) (*SSHConnection, error) {
@@ -48,6 +59,7 @@ func NewSSSHConnection(device *Device, cfg *config.Config) (*SSHConnection, erro
 		Host:         device.Host + ":" + device.Port,
 		batchSize:    batchSize,
 		clientConfig: sshConfig,
+		Debug:        cfg.Debug, // مقداردهی فیلد Debug از cfg
 	}
 
 	err := c.Connect()
@@ -56,17 +68,6 @@ func NewSSSHConnection(device *Device, cfg *config.Config) (*SSHConnection, erro
 	}
 
 	return c, nil
-}
-
-// SSHConnection encapsulates the connection to the device
-type SSHConnection struct {
-	client       *ssh.Client
-	Host         string
-	stdin        io.WriteCloser
-	stdout       io.Reader
-	session      *ssh.Session
-	batchSize    int
-	clientConfig *ssh.ClientConfig
 }
 
 // Connect connects to the device
@@ -103,7 +104,7 @@ type result struct {
 	err    error
 }
 
-// RunCommand runs a command against the device
+// RunCommand runs a command against the device with enhanced timeout logging
 func (c *SSHConnection) RunCommand(cmd string) (string, error) {
 	buf := bufio.NewReader(c.stdout)
 	io.WriteString(c.stdin, cmd+"\n")
@@ -116,6 +117,9 @@ func (c *SSHConnection) RunCommand(cmd string) (string, error) {
 	case res := <-outputChan:
 		return res.output, res.err
 	case <-time.After(c.clientConfig.Timeout):
+		if c.Debug { // استفاده از c.Debug به جای c.clientConfig.Debug
+			log.Printf("Timeout reached for command '%s' on %s\n", cmd, c.Host)
+		}
 		return "", errors.New("Timeout reached")
 	}
 }

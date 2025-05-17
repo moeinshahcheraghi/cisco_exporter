@@ -38,6 +38,16 @@ var (
 	stackportEnabled = flag.Bool("stackport.enabled", true, "Scrape stack port metrics") 
 	devices            []*connector.Device
 	cfg                *config.Config
+	etherchannelEnabled  = flag.Bool("etherchannel.enabled", true, "Scrape EtherChannel metrics")
+	slottempEnabled      = flag.Bool("slottemp.enabled", true, "Scrape slot temperature metrics")
+	loginfailuresEnabled = flag.Bool("loginfailures.enabled", true, "Scrape login failures metrics")
+	configlogEnabled     = flag.Bool("configlog.enabled", true, "Scrape config log metrics")
+	spanningtreeEnabled  = flag.Bool("spanningtree.enabled", true, "Scrape spanning tree metrics")
+	poeEnabled           = flag.Bool("poe.enabled", true, "Scrape PoE metrics")
+	processesEnabled     = flag.Bool("processes.enabled", true, "Scrape processes metrics")
+	arpEnabled           = flag.Bool("arp.enabled", true, "Scrape ARP metrics")
+	cefEnabled           = flag.Bool("cef.enabled", true, "Scrape CEF metrics")
+)
 )
 
 func init() {
@@ -114,7 +124,14 @@ func loadConfigFromFlags() *config.Config {
 	f.Facts = factsEnabled
 	f.Interfaces = interfacesEnabled
 	f.Optics = opticsEnabled
-
+	f.EtherChannel = etherchannelEnabled
+	f.SlotTemp = slottempEnabled
+	f.LoginFailures = loginfailuresEnabled
+	f.ConfigLog = configlogEnabled
+	f.SpanningTree = spanningtreeEnabled
+	f.Processes = processesEnabled
+	f.ARP = arpEnabled
+	f.CEF = cefEnabled
 	return c
 }
 

@@ -1,90 +1,151 @@
-# cisco_exporter
-Exporter for metrics from devices running Cisco (NX-OS/IOS XE/IOS) (via SSH) https://prometheus.io/
+# Cisco Exporter
 
-The basic structure is based on https://github.com/czerwonk/junos_exporter
+Cisco Exporter is a Prometheus exporter for monitoring Cisco network devices. It connects to Cisco switches and routers via SSH, executes various "show" commands, and exposes the collected data as Prometheus metrics.
 
-# flags
-Name     | Description | Default
----------|-------------|---------
-version | Print version information. |
-web.listen-address | Address on which to expose metrics and web interface. | :9362
-web.telemetry-path | Path under which to expose metrics. | /metrics
-ssh.targets | Comma seperated list of hosts to scrape |
-ssh.user | Username to use for SSH connection | cisco_exporter
-ssh.keyfile | Key file to use for SSH connection | cisco_exporter
-ssh.timeout | Timeout in seconds to use for SSH connection | 5
-debug | Show verbose debug output | false
-legacy.ciphers | Allow insecure legacy ciphers: aes128-cbc 3des-cbc aes192-cbc aes256-cbc | false
-config.file | Path to config file |
+## Supported Cisco OS
 
-# metrics
+- IOS
+- IOS XE
+- NX-OS
 
-All metrics are enabled by default. To disable something pass a flag `--<name>.enabled=false`, where `<name>` is the name of the metric.
+## Installation
 
-Name     | Description | OS
----------|-------------|----
-bgp | BGP (message count, prefix counts per peer, session state) | IOS XE/NX-OS
-environment | Environment (temperatures, state of power supply) | NX-OS/IOS XE/IOS
-facts | System informations (OS Version, memory: total/used/free, cpu: 5s/1m/5m/interrupts) | IOS XE/IOS
-interfaces | Interfaces (transmitted/received: bytes/errors/drops, admin/oper state) | NX-OS (*_drops is always 0)/IOS XE/IOS
-optics | Optical signals (tx/rx) | NX-OS/IOS XE/IOS
+### Building from Source
 
-## Install
-```bash
-go get -u github.com/moeinshahcheraghi/cisco_exporter
-```
-
-## Usage
-
-### Binary
-```bash
-./cisco_exporter -ssh.targets="host1.example.com,host2.example.com:2233,172.16.0.1" -ssh.keyfile=cisco_exporter
-```
+To build Cisco Exporter from source, you need [Go](https://golang.org/) version 1.16 or later. Clone the repository and run:
 
 ```bash
-./cisco_exporter -config.file=config.yml
+go build -o cisco_exporter
 ```
 
-## Config file
-The exporter can be configured with a YAML based config file:
+Alternatively, you can download a pre-built binary from the [releases](https://github.com/moeinshahcheraghi/cisco_exporter/releases) page.
+
+### Docker
+
+You can run Cisco Exporter using Docker. First, build the Docker image:
+
+```bash
+docker build -t cisco_exporter .
+```
+
+Then, run the container, passing the necessary configuration. For example:
+
+```bash
+docker run -d -p 9362:9362 cisco_exporter -ssh.targets=192.168.1.1,192.168.1.2 -ssh.user=admin -ssh.password=admin_password
+```
+
+Alternatively, you can mount a configuration file:
+
+```bash
+docker run -d -p 9362:9362 -v /path/to/config.yaml:/config.yaml cisco_exporter -config.file=/config.yaml
+```
+
+### Kubernetes Helm
+
+To deploy Cisco Exporter in Kubernetes using Helm, assuming there is a Helm chart in the repository under `./helm/cisco-exporter`, you can install it with:
+
+```bash
+helm install cisco-exporter ./helm/cisco-exporter --set ssh.targets="192.168.1.1,192.168.1.2" --set ssh.user="admin" --set ssh.password="admin_password"
+```
+
+For production deployments, consider using a values file to manage configuration, especially for sensitive data.
+
+## Configuration
+
+Cisco Exporter can be configured using a YAML file or command-line flags.
+
+### Config File
+
+Example `config.yaml`:
 
 ```yaml
----
 debug: false
 legacy_ciphers: false
-# default values
 timeout: 5
 batch_size: 10000
-username: default-username
-password: default-password
-key_file: /path/to/key
-
+username: cisco_exporter
+password: your_password
+key_file: /path/to/keyfile
 devices:
-  - host: host1.example.com
-    key_file: /path/to/key
-    timeout: 5
-    batch_size: 10000
-    features: # enable/disable per host
-      bgp: false
-  - host: host2.example.com:2233
-    username: exporter
-    password: secret
-
+  - host: 192.168.1.1
+    username: admin
+    password: admin_password
 features:
   bgp: true
   environment: true
   facts: true
   interfaces: true
   optics: true
-
+  stack_port: true
 ```
 
-## Third Party Components
-This software uses components of the following projects
-* Prometheus Go client library (https://github.com/prometheus/client_golang)
+Run with:
+
+```bash
+./cisco_exporter -config.file=/path/to/config.yaml
+```
+
+### Command-Line Flags
+
+Example:
+
+```bash
+./cisco_exporter -ssh.targets=192.168.1.1,192.168.1.2 -ssh.user=admin -ssh.password=admin_password
+```
+
+For a full list of flags, run:
+
+```bash
+./cisco_exporter -h
+```
+
+## Running the Exporter
+
+By default, Cisco Exporter listens on `localhost:9362` and exposes metrics at `/metrics`. You can change the listen address and metrics path using flags.
+
+## Prometheus Configuration
+
+Add the following scrape config to your `prometheus.yml`:
+
+```yaml
+scrape_configs:
+  - job_name: 'cisco'
+    static_configs:
+      - targets: ['localhost:9362']
+```
+
+## Metrics
+
+Cisco Exporter provides the following metrics:
+
+| Metric Category   | Description                                                                                   |
+|-------------------|-----------------------------------------------------------------------------------------------|
+| **BGP**           | Monitors BGP session states (e.g., whether sessions are established) and statistics like the number of sent and received messages and received prefixes. |
+| **Environment**   | Monitors environmental conditions via sensors (e.g., temperature) and the status of power supplies (e.g., whether they are functioning correctly).          |
+| **Facts**         | Collects system-level information, such as the running OS version, CPU usage (over 5 seconds, 1 minute, and 5 minutes), and memory usage statistics (total, used, and free). |
+| **Interfaces**    | Collects detailed network interface statistics, including input and output bytes, number of errors, drops, broadcast and multicast packets, and administrative and operational status. |
+| **Optics**        | Monitors the performance of optical transceivers by tracking Tx (transmit) and Rx (receive) power levels.                  |
+| **Stack Port**    | Checks the status of stack ports in stacked switch configurations, indicating whether each port is operational.         |
+
+*Note: All metrics are prefixed with `cisco_` in Prometheus.*
+
+## Dependencies
+
+- Go 1.16 or later
+- External libraries:
+  - `golang.org/x/crypto/ssh`
+  - `github.com/prometheus/client_golang`
+  - `github.com/sirupsen/logrus`
+  - `gopkg.in/yaml.v2`
+
+## Contributing
+
+Contributions are welcome! Please submit issues or pull requests on [GitHub](https://github.com/moeinshahcheraghi/cisco_exporter).
 
 ## License
-(c) Martin Poppen, 2018. Licensed under [MIT](LICENSE) license.
 
-## Prometheus
-see https://prometheus.io/
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Security Note
+
+When configuring Cisco Exporter, especially in production environments, avoid passing sensitive information like passwords via command-line flags or plain text in configuration files. Instead, use SSH key-based authentication or manage secrets securely using tools like Kubernetes Secrets or environment variables.
