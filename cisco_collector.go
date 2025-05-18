@@ -88,14 +88,26 @@ func (c *ciscoCollector) collectForHost(device *connector.Device, ch chan<- prom
 		return
 	}
 
+	collectorWG := &sync.WaitGroup{}
 	for _, col := range c.collectors.collectorsForDevice(device) {
-		ct := time.Now()
-		err := col.Collect(client, ch, l)
+		collectorWG.Add(1)
+		go func(col collector.RPCCollector) {
+			defer collectorWG.Done()
 
-		if err != nil && err.Error() != "EOF" {
-			log.Errorln(col.Name() + ": " + err.Error())
-		}
+			ct := time.Now()
+			err := col.Collect(client, ch, l)
+			if err != nil && err.Error() != "EOF" {
+				log.Errorf("%s (%s): %s", device.Host, col.Name(), err.Error())
+			}
 
-		ch <- prometheus.MustNewConstMetric(scrapeCollectorDurationDesc, prometheus.GaugeValue, time.Since(ct).Seconds(), append(l, col.Name())...)
+			ch <- prometheus.MustNewConstMetric(
+				scrapeCollectorDurationDesc,
+				prometheus.GaugeValue,
+				time.Since(ct).Seconds(),
+				append(l, col.Name())...,
+			)
+		}(col)
 	}
+
+	collectorWG.Wait()
 }
