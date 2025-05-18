@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/moeinshahcheraghi/cisco_exporter/config"
 	"github.com/moeinshahcheraghi/cisco_exporter/connector"
@@ -62,7 +61,6 @@ func main() {
 		log.Fatalf("Error during initialization: %v", err)
 	}
 
-	go backgroundCollector(devices, cfg)
 	startServer()
 }
 

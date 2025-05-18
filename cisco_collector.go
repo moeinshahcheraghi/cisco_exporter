@@ -2,8 +2,9 @@ package main
 
 import (
 	"time"
-
 	"sync"
+
+	"github.com/moeinshahcheraghi/cisco_exporter/collector"
 	"github.com/moeinshahcheraghi/cisco_exporter/connector"
 	"github.com/moeinshahcheraghi/cisco_exporter/rpc"
 	"github.com/prometheus/client_golang/prometheus"
@@ -18,13 +19,11 @@ var (
 	upDesc                      *prometheus.Desc
 )
 
-
 func init() {
 	upDesc = prometheus.NewDesc(prefix+"up", "Scrape of target was successful", []string{"target"}, nil)
 	scrapeDurationDesc = prometheus.NewDesc(prefix+"collector_duration_seconds", "Duration of a collector scrape for one target", []string{"target"}, nil)
 	scrapeCollectorDurationDesc = prometheus.NewDesc(prefix+"collect_duration_seconds", "Duration of a scrape by collector and target", []string{"target", "collector"}, nil)
 }
-
 
 type ciscoCollector struct {
 	devices    []*connector.Device
@@ -38,7 +37,6 @@ func newCiscoCollector(devices []*connector.Device) *ciscoCollector {
 	}
 }
 
-// Describe implements prometheus.Collector interface
 func (c *ciscoCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- upDesc
 	ch <- scrapeDurationDesc
@@ -49,11 +47,10 @@ func (c *ciscoCollector) Describe(ch chan<- *prometheus.Desc) {
 	}
 }
 
-// Collect implements prometheus.Collector interface
 func (c *ciscoCollector) Collect(ch chan<- prometheus.Metric) {
 	wg := &sync.WaitGroup{}
-
 	wg.Add(len(c.devices))
+
 	for _, d := range c.devices {
 		go c.collectForHost(d, ch, wg)
 	}
