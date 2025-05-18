@@ -1,6 +1,7 @@
 package optics
 
 type Optics struct {
-	RxPower float64
-	TxPower float64
+    Interface string
+    RxPower   float64
+    TxPower   float64
 }

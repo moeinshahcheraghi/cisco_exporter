@@ -13,6 +13,7 @@ import (
 	"github.com/moeinshahcheraghi/cisco_exporter/collector"
 	"github.com/moeinshahcheraghi/cisco_exporter/config"
 	"github.com/moeinshahcheraghi/cisco_exporter/connector"
+	"github.com/moeinshahcheraghi/cisco_exporter/rpc" // Added missing import
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -21,37 +22,37 @@ import (
 const version string = "0.2"
 
 var (
-	showVersion        = flag.Bool("version", false, "Print version information.")
-	listenAddress      = flag.String("web.listen-address", ":9362", "Address on which to expose metrics and web interface.")
-	metricsPath        = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
-	sshHosts           = flag.String("ssh.targets", "", "SSH Hosts to scrape")
-	sshUsername        = flag.String("ssh.user", "cisco_exporter", "Username to use for SSH connection")
-	sshPassword        = flag.String("ssh.password", "", "Password to use for SSH connection")
-	sshKeyFile         = flag.String("ssh.keyfile", "", "Key file to use for SSH connection")
-	sshTimeout         = flag.Int("ssh.timeout", 5, "Timeout to use for SSH connection")
-	sshBatchSize       = flag.Int("ssh.batch-size", 10000, "The SSH response batch size")
-	debug              = flag.Bool("debug", false, "Show verbose debug output in log")
-	legacyCiphers      = flag.Bool("legacy.ciphers", false, "Allow legacy CBC ciphers")
-	bgpEnabled         = flag.Bool("bgp.enabled", true, "Scrape bgp metrics")
-	environmentEnabled = flag.Bool("environment.enabled", true, "Scrape environment metrics")
-	factsEnabled       = flag.Bool("facts.enabled", true, "Scrape system metrics")
-	interfacesEnabled  = flag.Bool("interfaces.enabled", true, "Scrape interface metrics")
-	opticsEnabled      = flag.Bool("optics.enabled", true, "Scrape optic metrics")
-	configFile         = flag.String("config.file", "", "Path to config file")
-	stackportEnabled   = flag.Bool("stackport.enabled", true, "Scrape stack port metrics")
-	etherchannelEnabled  = flag.Bool("etherchannel.enabled", true, "Scrape EtherChannel metrics")
-	slottempEnabled      = flag.Bool("slottemp.enabled", true, "Scrape slot temperature metrics")
+	showVersion         = flag.Bool("version", false, "Print version information.")
+	listenAddress       = flag.String("web.listen-address", ":9362", "Address on which to expose metrics and web interface.")
+	metricsPath         = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
+	sshHosts            = flag.String("ssh.targets", "", "SSH Hosts to scrape")
+	sshUsername         = flag.String("ssh.user", "cisco_exporter", "Username to use for SSH connection")
+	sshPassword         = flag.String("ssh.password", "", "Password to use for SSH connection")
+	sshKeyFile          = flag.String("ssh.keyfile", "", "Key file to use for SSH connection")
+	sshTimeout          = flag.Int("ssh.timeout", 5, "Timeout to use for SSH connection")
+	sshBatchSize        = flag.Int("ssh.batch-size", 10000, "The SSH response batch size")
+	debug               = flag.Bool("debug", false, "Show verbose debug output in log")
+	legacyCiphers       = flag.Bool("legacy.ciphers", false, "Allow legacy CBC ciphers")
+	bgpEnabled          = flag.Bool("bgp.enabled", true, "Scrape bgp metrics")
+	environmentEnabled  = flag.Bool("environment.enabled", true, "Scrape environment metrics")
+	factsEnabled        = flag.Bool("facts.enabled", true, "Scrape system metrics")
+	interfacesEnabled   = flag.Bool("interfaces.enabled", true, "Scrape interface metrics")
+	opticsEnabled       = flag.Bool("optics.enabled", true, "Scrape optic metrics")
+	configFile          = flag.String("config.file", "", "Path to config file")
+	stackportEnabled    = flag.Bool("stackport.enabled", true, "Scrape stack port metrics")
+	etherchannelEnabled = flag.Bool("etherchannel.enabled", true, "Scrape EtherChannel metrics")
+	slottempEnabled     = flag.Bool("slottemp.enabled", true, "Scrape slot temperature metrics")
 	loginfailuresEnabled = flag.Bool("loginfailures.enabled", true, "Scrape login failures metrics")
-	configlogEnabled     = flag.Bool("configlog.enabled", true, "Scrape config log metrics")
-	spanningtreeEnabled  = flag.Bool("spanningtree.enabled", true, "Scrape spanning tree metrics")
-	poeEnabled           = flag.Bool("poe.enabled", true, "Scrape PoE metrics")
-	processesEnabled     = flag.Bool("processes.enabled", true, "Scrape processes metrics")
-	arpEnabled           = flag.Bool("arp.enabled", true, "Scrape ARP metrics")
-	cefEnabled           = flag.Bool("cef.enabled", true, "Scrape CEF metrics")
+	configlogEnabled    = flag.Bool("configlog.enabled", true, "Scrape config log metrics")
+	spanningtreeEnabled = flag.Bool("spanningtree.enabled", true, "Scrape spanning tree metrics")
+	poeEnabled          = flag.Bool("poe.enabled", true, "Scrape PoE metrics")
+	processesEnabled    = flag.Bool("processes.enabled", true, "Scrape processes metrics")
+	arpEnabled          = flag.Bool("arp.enabled", true, "Scrape ARP metrics")
+	cefEnabled          = flag.Bool("cef.enabled", true, "Scrape CEF metrics")
 
-	cachedMetrics     map[string][]prometheus.Metric
-	cachedMetricsLock sync.RWMutex
-	collectionInterval time.Duration = 10 * time.Second 
+	cachedMetrics      map[string][]prometheus.Metric
+	cachedMetricsLock  sync.RWMutex
+	collectionInterval time.Duration = 10 * time.Second
 	cfg                *config.Config
 	devices            []*connector.Device
 )
@@ -160,16 +161,19 @@ func handleMetricsRequest(w http.ResponseWriter, r *http.Request) {
 	}).ServeHTTP(w, r)
 }
 
+// metricWrapper wraps a Prometheus metric to implement the prometheus.Collector interface
 type metricWrapper struct {
-	prometheus.Metric
+	Metric prometheus.Metric
 }
 
-func (m *metricWrapper) Desc() *prometheus.Desc {
-	return m.Metric.Desc()
+// Describe sends the metric's description to the provided channel
+func (m *metricWrapper) Describe(ch chan<- *prometheus.Desc) {
+	ch <- m.Metric.Desc()
 }
 
-func (m *metricWrapper) Write(out *prometheus.Metric) error {
-	return nil
+// Collect sends the metric itself to the provided channel
+func (m *metricWrapper) Collect(ch chan<- prometheus.Metric) {
+	ch <- m.Metric
 }
 
 func main() {
