@@ -19,7 +19,6 @@ import (
 	"github.com/moeinshahcheraghi/cisco_exporter/cef"
 )
 
-
 type collectors struct {
 	collectors map[string]collector.RPCCollector
 	devices    map[string][]collector.RPCCollector
@@ -39,7 +38,6 @@ func collectorsForDevices(devices []*connector.Device, cfg *config.Config) *coll
 
 	return c
 }
-
 
 func (c *collectors) initCollectorsForDevice(device *connector.Device) {
 	f := c.cfg.FeaturesForDevice(device.Host)
@@ -74,14 +72,10 @@ func (c *collectors) addCollectorIfEnabledForDevice(device *connector.Device, ke
 }
 
 func (c *collectors) allEnabledCollectors() []collector.RPCCollector {
-	collectors := make([]collector.RPCCollector, len(c.collectors))
-
-	i := 0
-	for _, collector := range c.collectors {
-		collectors[i] = collector
-		i++
+	collectors := make([]collector.RPCCollector, 0, len(c.collectors))
+	for _, col := range c.collectors {
+		collectors = append(collectors, col)
 	}
-
 	return collectors
 }
 
@@ -90,6 +84,5 @@ func (c *collectors) collectorsForDevice(device *connector.Device) []collector.R
 	if !found {
 		return []collector.RPCCollector{}
 	}
-
 	return cols
 }
