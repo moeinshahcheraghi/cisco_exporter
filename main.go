@@ -48,7 +48,7 @@ var (
 	arpEnabled           = flag.Bool("arp.enabled", true, "Scrape ARP metrics")
 	cefEnabled           = flag.Bool("cef.enabled", true, "Scrape CEF metrics")
 )
-)
+
 
 func init() {
 	flag.Usage = func() {

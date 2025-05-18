@@ -55,7 +55,6 @@ func (c *collectors) initCollectorsForDevice(device *connector.Device) {
 	c.addCollectorIfEnabledForDevice(device, "loginfailures", f.LoginFailures, loginfail.NewCollector)
 	c.addCollectorIfEnabledForDevice(device, "configlog", f.ConfigLog, configlog.NewCollector)
 	c.addCollectorIfEnabledForDevice(device, "spanningtree", f.SpanningTree, spanningtree.NewCollector)
-	c.addCollectorIfEnabledForDevice(device, "processes", f.Processes, proc.NewCollector)
 	c.addCollectorIfEnabledForDevice(device, "arp", f.ARP, arp.NewCollector)
 	c.addCollectorIfEnabledForDevice(device, "cef", f.CEF, cef.NewCollector)
 }
