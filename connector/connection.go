@@ -22,7 +22,7 @@ type SSHConnection struct {
 	session      *ssh.Session
 	batchSize    int
 	clientConfig *ssh.ClientConfig
-	Debug        bool // فیلد جدید برای پرچم دیباگ
+	Debug        bool 
 }
 
 // NewSSSHConnection connects to device
@@ -59,7 +59,7 @@ func NewSSSHConnection(device *Device, cfg *config.Config) (*SSHConnection, erro
 		Host:         device.Host + ":" + device.Port,
 		batchSize:    batchSize,
 		clientConfig: sshConfig,
-		Debug:        cfg.Debug, // مقداردهی فیلد Debug از cfg
+		Debug:        cfg.Debug, 
 	}
 
 	err := c.Connect()

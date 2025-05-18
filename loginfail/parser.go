@@ -14,7 +14,7 @@ func (c *loginfailCollector) Parse(ostype string, output string) (int, error) {
 	re := regexp.MustCompile(`Total Failed Attempts: (\d+)`)
 	matches := re.FindStringSubmatch(output)
 	if matches == nil {
-		return 0, nil // No failures found
+		return 0, nil 
 	}
 	count, _ := strconv.Atoi(matches[1])
 	return count, nil
