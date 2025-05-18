@@ -3,6 +3,7 @@ package loginfail
 import (
 	"errors"
 	"regexp"
+	"strconv"
 	"github.com/moeinshahcheraghi/cisco_exporter/rpc"
 )
 

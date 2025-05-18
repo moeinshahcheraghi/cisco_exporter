@@ -15,7 +15,6 @@ import (
 	"github.com/moeinshahcheraghi/cisco_exporter/loginfail"
 	"github.com/moeinshahcheraghi/cisco_exporter/configlog"
 	"github.com/moeinshahcheraghi/cisco_exporter/spanningtree"
-	"github.com/moeinshahcheraghi/cisco_exporter/proc"
 	"github.com/moeinshahcheraghi/cisco_exporter/arp"
 	"github.com/moeinshahcheraghi/cisco_exporter/cef"
 )
