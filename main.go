@@ -57,19 +57,7 @@ var (
 	devices            []*connector.Device
 )
 
-const prefix = "cisco_"
 
-var (
-	upDesc                      *prometheus.Desc
-	scrapeDurationDesc          *prometheus.Desc
-	scrapeCollectorDurationDesc *prometheus.Desc
-)
-
-func init() {
-	upDesc = prometheus.NewDesc(prefix+"up", "Scrape of target was successful", []string{"target"}, nil)
-	scrapeDurationDesc = prometheus.NewDesc(prefix+"collector_duration_seconds", "Duration of a collector scrape for one target", []string{"target"}, nil)
-	scrapeCollectorDurationDesc = prometheus.NewDesc(prefix+"collect_duration_seconds", "Duration of a scrape by collector and target", []string{"target", "collector"}, nil)
-}
 
 func backgroundCollector(devices []*connector.Device, cfg *config.Config) {
 	for {
