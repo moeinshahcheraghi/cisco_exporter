@@ -1,0 +1,23 @@
+{{- if (default false .Values.monitoring.enabled) }}
+
+  Cisco Exporter has been deployed with PodMonitor enabled.
+
+  Ensure your Prometheus is watching the namespace:
+    {{ .Release.Namespace }}
+
+  PodMonitor configuration:
+    Name:         {{ include "cisco-exporter.fullname" . }}
+    Interval:     {{ .Values.monitoring.interval }}
+    Metrics Path: /metrics
+    Port:         {{ .Values.service.name }}
+
+{{- else }}
+
+ Cisco Exporter has been deployed, but PodMonitor is disabled.
+
+ To enable it, update your values.yaml like this:
+
+monitoring:
+  enabled: true
+
+{{- end }}

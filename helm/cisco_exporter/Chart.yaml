@@ -1,0 +1,6 @@
+apiVersion: v2
+name: cisco-exporter
+description: Helm chart for Cisco device exporter
+type: application
+version: 0.2.0
+appVersion: "v6"

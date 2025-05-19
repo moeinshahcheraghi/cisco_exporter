@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "cisco-exporter.fullname" . }}-config
+data:
+  config.yml: |
+    debug: {{ .Values.config.debug }}
+    legacy_ciphers: {{ .Values.config.legacy_ciphers }}
+    timeout: {{ .Values.config.timeout }}
+    batch_size: {{ .Values.config.batch_size }}
+    username: {{ .Values.config.username }}
+    password: {{ .Values.config.password }}
+    devices:
+{{- range .Values.config.devices }}
+      - host: {{ .host | quote }}
+        username: {{ .username | quote }}
+        password: {{ .password | quote }}
+{{- end }}
+    features:
+{{- range $k, $v := .Values.config.features }}
+      {{ $k }}: {{ $v }}
+{{- end }}

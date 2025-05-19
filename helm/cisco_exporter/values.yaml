@@ -1,0 +1,39 @@
+replicaCount: 1
+
+image:
+  repository: moeinshah/cisco_exporter
+  tag: v11
+  pullPolicy: IfNotPresent
+
+service:
+  name: metrics
+  type: LoadBalancer
+  port: 9362
+
+config:
+  debug: true
+  legacy_ciphers: true
+  timeout: 5
+  batch_size: 1000
+  username: "admin"
+  password: "admin123"
+  devices:
+    - host: 192.168.1.1
+      username: admin
+      password: admin123
+  features:
+    bgp: true
+    environment: true
+    facts: true
+    interfaces: true
+    optics: true
+    stackport: true
+
+resources: {}
+
+monitoring:
+  enabled: true
+  interval: 30s
+  release: kube-prometheus-stack
+
+namespaceOverride: ""
