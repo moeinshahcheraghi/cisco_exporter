@@ -14,6 +14,21 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+<<<<<<< HEAD
+=======
+// SSHConnection encapsulates the connection to the device
+type SSHConnection struct {
+	client       *ssh.Client
+	Host         string
+	stdin        io.WriteCloser
+	stdout       io.Reader
+	session      *ssh.Session
+	batchSize    int
+	clientConfig *ssh.ClientConfig
+	Debug        bool 
+}
+
+>>>>>>> e3bc6f2f2b94b325bd962a9f2c75adafe7e24066
 // NewSSSHConnection connects to device
 func NewSSSHConnection(device *Device, cfg *config.Config) (*SSHConnection, error) {
 	deviceConfig := device.DeviceConfig
@@ -48,6 +63,10 @@ func NewSSSHConnection(device *Device, cfg *config.Config) (*SSHConnection, erro
 		Host:         device.Host + ":" + device.Port,
 		batchSize:    batchSize,
 		clientConfig: sshConfig,
+<<<<<<< HEAD
+=======
+		Debug:        cfg.Debug, 
+>>>>>>> e3bc6f2f2b94b325bd962a9f2c75adafe7e24066
 	}
 
 	err := c.Connect()

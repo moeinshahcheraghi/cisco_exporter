@@ -10,6 +10,16 @@ import (
 	"github.com/moeinshahcheraghi/cisco_exporter/interfaces"
 	"github.com/moeinshahcheraghi/cisco_exporter/optics"
 	"github.com/moeinshahcheraghi/cisco_exporter/stackport"
+<<<<<<< HEAD
+=======
+	"github.com/moeinshahcheraghi/cisco_exporter/etherchannel"
+	"github.com/moeinshahcheraghi/cisco_exporter/slottemp"
+	"github.com/moeinshahcheraghi/cisco_exporter/loginfail"
+	"github.com/moeinshahcheraghi/cisco_exporter/configlog"
+	"github.com/moeinshahcheraghi/cisco_exporter/spanningtree"
+	"github.com/moeinshahcheraghi/cisco_exporter/arp"
+	"github.com/moeinshahcheraghi/cisco_exporter/cef"
+>>>>>>> e3bc6f2f2b94b325bd962a9f2c75adafe7e24066
 )
 
 type collectors struct {
@@ -41,8 +51,19 @@ func (c *collectors) initCollectorsForDevice(device *connector.Device) {
 	c.addCollectorIfEnabledForDevice(device, "facts", f.Facts, facts.NewCollector)
 	c.addCollectorIfEnabledForDevice(device, "interfaces", f.Interfaces, interfaces.NewCollector)
 	c.addCollectorIfEnabledForDevice(device, "optics", f.Optics, optics.NewCollector)
+<<<<<<< HEAD
 	c.addCollectorIfEnabledForDevice(device, "stackport", f.StackPort, stackport.NewCollector) 
 
+=======
+	c.addCollectorIfEnabledForDevice(device, "stackport", f.StackPort, stackport.NewCollector)
+	c.addCollectorIfEnabledForDevice(device, "etherchannel", f.EtherChannel, etherchannel.NewCollector)
+	c.addCollectorIfEnabledForDevice(device, "slottemp", f.SlotTemp, slottemp.NewCollector)
+	c.addCollectorIfEnabledForDevice(device, "loginfailures", f.LoginFailures, loginfail.NewCollector)
+	c.addCollectorIfEnabledForDevice(device, "configlog", f.ConfigLog, configlog.NewCollector)
+	c.addCollectorIfEnabledForDevice(device, "spanningtree", f.SpanningTree, spanningtree.NewCollector)
+	c.addCollectorIfEnabledForDevice(device, "arp", f.ARP, arp.NewCollector)
+	c.addCollectorIfEnabledForDevice(device, "cef", f.CEF, cef.NewCollector)
+>>>>>>> e3bc6f2f2b94b325bd962a9f2c75adafe7e24066
 }
 
 func (c *collectors) addCollectorIfEnabledForDevice(device *connector.Device, key string, enabled *bool, newCollector func() collector.RPCCollector) {
@@ -60,14 +81,10 @@ func (c *collectors) addCollectorIfEnabledForDevice(device *connector.Device, ke
 }
 
 func (c *collectors) allEnabledCollectors() []collector.RPCCollector {
-	collectors := make([]collector.RPCCollector, len(c.collectors))
-
-	i := 0
-	for _, collector := range c.collectors {
-		collectors[i] = collector
-		i++
+	collectors := make([]collector.RPCCollector, 0, len(c.collectors))
+	for _, col := range c.collectors {
+		collectors = append(collectors, col)
 	}
-
 	return collectors
 }
 
@@ -76,6 +93,5 @@ func (c *collectors) collectorsForDevice(device *connector.Device) []collector.R
 	if !found {
 		return []collector.RPCCollector{}
 	}
-
 	return cols
 }
