@@ -3,16 +3,17 @@ package etherchannel
 import (
     "errors"
     "regexp"
-    "strconv" 
+    "strconv"
     "strings"
+
     "github.com/moeinshahcheraghi/cisco_exporter/rpc"
-    "github.com/moeinshahcheraghi/cisco_exporter/util"
 )
 
 func Parse(ostype string, output string) (int, []EtherChannelGroup, error) {
     if ostype != rpc.IOSXE && ostype != rpc.NXOS && ostype != rpc.IOS {
         return 0, nil, errors.New("'show etherchannel summary' is not implemented for " + ostype)
     }
+
     groupsTotalRegexp := regexp.MustCompile(`Number of channel-groups in use:\s+(\d+)`)
     groupRegexp := regexp.MustCompile(`^(\d+)\s+(\S+)\((\S+)\)\s+(\S+)\s+(.*)$`)
     portRegexp := regexp.MustCompile(`(\S+)\((\S+)\)`)

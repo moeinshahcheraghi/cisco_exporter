@@ -4,6 +4,7 @@ import (
     "errors"
     "regexp"
     "strings"
+
     "github.com/moeinshahcheraghi/cisco_exporter/rpc"
     "github.com/moeinshahcheraghi/cisco_exporter/util"
 )

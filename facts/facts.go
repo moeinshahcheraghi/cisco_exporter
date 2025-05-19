@@ -19,7 +19,7 @@ type CPUFact struct {
 }
 
 type Process struct {
-    Name      string
-    CPUUsage  float64
+    Name        string
+    CPUUsage    float64
     MemoryUsage float64
 }
