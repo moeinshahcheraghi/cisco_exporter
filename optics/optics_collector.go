@@ -1,14 +1,13 @@
 package optics
 
 import (
-    "log"
-    "regexp"
-    "strings"
-    "errors"                               
-    "github.com/moeinshahcheraghi/cisco_exporter/util" 
-    "github.com/moeinshahcheraghi/cisco_exporter/rpc"
-    "github.com/moeinshahcheraghi/cisco_exporter/collector"
-    "github.com/prometheus/client_golang/prometheus"
+	"log"
+	"regexp"
+	"strings"
+
+	"github.com/moeinshahcheraghi/cisco_exporter/rpc"
+	"github.com/moeinshahcheraghi/cisco_exporter/collector"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const prefix string = "cisco_optics_"
