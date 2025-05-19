@@ -133,3 +133,34 @@ func (c *interfaceCollector) ParseVlans(ostype string, output string) ([]Interfa
 	}
 	return append(items, current), nil
 }
+
+
+func ParsePowerInline(ostype string, output string) (map[string]float64, error) {
+    if ostype != rpc.IOSXE && ostype != rpc.NXOS && ostype != rpc.IOS {
+        return nil, errors.New("'show power inline' is not implemented for " + ostype)
+    }
+    powerRegexp := regexp.MustCompile(`(\S+)\s+\S+\s+\S+\s+\S+\s+(\d+\.\d+)\s+\d+\.\d+`)
+    lines := strings.Split(output, "\n")
+    powerMap := make(map[string]float64)
+    for _, line := range lines {
+        if matches := powerRegexp.FindStringSubmatch(line); matches != nil {
+            powerMap[matches[1]] = util.Str2float64(matches[2])
+        }
+    }
+    return powerMap, nil
+}
+
+func ParseCefInterface(ostype string, output string) (map[string]string, error) {
+    if ostype != rpc.IOSXE && ostype != rpc.NXOS && ostype != rpc.IOS {
+        return nil, errors.New("'show cef interface' is not implemented for " + ostype)
+    }
+    cefRegexp := regexp.MustCompile(`(\S+)\s+is\s+(up|down)`)
+    lines := strings.Split(output, "\n")
+    cefMap := make(map[string]string)
+    for _, line := range lines {
+        if matches := cefRegexp.FindStringSubmatch(line); matches != nil {
+            cefMap[matches[1]] = matches[2]
+        }
+    }
+    return cefMap, nil
+}

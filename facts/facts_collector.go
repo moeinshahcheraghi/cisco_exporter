@@ -124,3 +124,55 @@ func (c *factsCollector) Collect(client *rpc.Client, ch chan<- prometheus.Metric
 	}
 	return nil
 }
+
+func (c *factsCollector) CollectTopProcessCPU(client *rpc.Client, ch chan<- prometheus.Metric, labelValues []string) error {
+    out, err := client.RunCommand("show processes cpu sorted | exclude 0.00%")
+    if err != nil {
+        return err
+    }
+    process, err := ParseTopProcessCPU(client.OSType, out)
+    if err != nil {
+        return err
+    }
+    l := append(labelValues, process.Name)
+    ch <- prometheus.MustNewConstMetric(topProcessCPUDesc, prometheus.GaugeValue, process.CPUUsage, l...)
+    return nil
+}
+
+func (c *factsCollector) CollectTopProcessMemory(client *rpc.Client, ch chan<- prometheus.Metric, labelValues []string) error {
+    out, err := client.RunCommand("show processes memory")
+    if err != nil {
+        return err
+    }
+    process, err := ParseTopProcessMemory(client.OSType, out)
+    if err != nil {
+        return err
+    }
+    l := append(labelValues, process.Name)
+    ch <- prometheus.MustNewConstMetric(topProcessMemoryDesc, prometheus.GaugeValue, process.MemoryUsage, l...)
+    return nil
+}
+
+func (c *factsCollector) Collect(client *rpc.Client, ch chan<- prometheus.Metric, labelValues []string) error {
+    err := c.CollectVersion(client, ch, labelValues)
+    if client.Debug && err != nil {
+        log.Printf("CollectVersion for %s: %s\n", labelValues[0], err.Error())
+    }
+    err = c.CollectMemory(client, ch, labelValues)
+    if client.Debug && err != nil {
+        log.Printf("CollectMemory for %s: %s\n", labelValues[0], err.Error())
+    }
+    err = c.CollectCPU(client, ch, labelValues)
+    if client.Debug && err != nil {
+        log.Printf("CollectCPU for %s: %s\n", labelValues[0], err.Error())
+    }
+    err = c.CollectTopProcessCPU(client, ch, labelValues)
+    if client.Debug && err != nil {
+        log.Printf("CollectTopProcessCPU for %s: %s\n", labelValues[0], err.Error())
+    }
+    err = c.CollectTopProcessMemory(client, ch, labelValues)
+    if client.Debug && err != nil {
+        log.Printf("CollectTopProcessMemory for %s: %s\n", labelValues[0], err.Error())
+    }
+    return nil
+}
