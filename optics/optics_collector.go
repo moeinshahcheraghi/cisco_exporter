@@ -3,9 +3,9 @@ package optics
 import (
 	"log"
 	"regexp"
-	"strings"
 
 	"github.com/moeinshahcheraghi/cisco_exporter/rpc"
+
 	"github.com/moeinshahcheraghi/cisco_exporter/collector"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -44,50 +44,60 @@ func (*opticsCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect collects metrics from Cisco
 func (c *opticsCollector) Collect(client *rpc.Client, ch chan<- prometheus.Metric, labelValues []string) error {
-	var cmd string
+	var iflistcmd string
+
 	switch client.OSType {
 	case rpc.IOS, rpc.IOSXE:
-		cmd = "show interfaces transceiver"
+		iflistcmd = "show interfaces stats | exclude disabled"
 	case rpc.NXOS:
-		cmd = "show interface transceiver details"
+		iflistcmd = "show interface status | exclude disabled | exclude notconn | exclude sfpAbsent | exclude --------------------------------------------------------------------------------"
 	}
-	out, err := client.RunCommand(cmd)
+	out, err := client.RunCommand(iflistcmd)
+
 	if err != nil {
 		return err
 	}
-	items, err := c.Parse(client.OSType, out)
+	interfaces, err := c.ParseInterfaces(client.OSType, out)
 	if err != nil {
 		if client.Debug {
-			log.Printf("Parse optics for %s: %s\n", labelValues[0], err.Error())
+			log.Printf("ParseInterfaces for %s: %s\n", labelValues[0], err.Error())
 		}
 		return nil
 	}
-	for _, item := range items {
-		l := append(labelValues, item.Interface)
-		ch <- prometheus.MustNewConstMetric(opticsTXDesc, prometheus.GaugeValue, float64(item.TxPower), l...)
-		ch <- prometheus.MustNewConstMetric(opticsRXDesc, prometheus.GaugeValue, float64(item.RxPower), l...)
-	}
-	return nil
-}
 
-// Parse parses cli output and tries to find tx/rx power for all interfaces
-func (c *opticsCollector) Parse(ostype string, output string) ([]Optics, error) {
-	if ostype != rpc.IOSXE && ostype != rpc.NXOS && ostype != rpc.IOS {
-		return nil, errors.New("Transceiver data is not implemented for " + ostype)
-	}
-	items := []Optics{}
-	lines := strings.Split(output, "\n")
-	re := regexp.MustCompile(`(\S+)\s+((?:-)?\d+\.\d+)\s+((?:-)?\d+\.\d+)`)
-	for _, line := range lines {
-		matches := re.FindStringSubmatch(line)
-		if matches == nil {
+	xeDev, _ := regexp.Compile(`\S(\d+)/(\d+)/(\d+)`)
+
+	for _, i := range interfaces {
+		switch client.OSType {
+		case rpc.IOS:
+			out, err = client.RunCommand("show interfaces " + i + " transceiver")
+		case rpc.NXOS:
+			out, err = client.RunCommand("show interface " + i + " transceiver details")
+		case rpc.IOSXE:
+			matches := xeDev.FindStringSubmatch(i)
+			if matches == nil {
+				continue
+			}
+			out, err = client.RunCommand("show hw-module subslot " + matches[1] + "/" + matches[2] + " transceiver " + matches[3] + " status")
+		}
+		if err != nil {
+			if client.Debug {
+				log.Printf("Transceiver command on %s: %s\n", labelValues[0], err.Error())
+			}
 			continue
 		}
-		items = append(items, Optics{
-			Interface: matches[1],
-			TxPower:   util.Str2float64(matches[2]),
-			RxPower:   util.Str2float64(matches[3]),
-		})
+		optic, err := c.ParseTransceiver(client.OSType, out)
+		if err != nil {
+			if client.Debug {
+				log.Printf("Transceiver data for %s: %s\n", labelValues[0], err.Error())
+			}
+			continue
+		}
+		l := append(labelValues, i)
+
+		ch <- prometheus.MustNewConstMetric(opticsTXDesc, prometheus.GaugeValue, float64(optic.TxPower), l...)
+		ch <- prometheus.MustNewConstMetric(opticsRXDesc, prometheus.GaugeValue, float64(optic.RxPower), l...)
 	}
-	return items, nil
+
+	return nil
 }

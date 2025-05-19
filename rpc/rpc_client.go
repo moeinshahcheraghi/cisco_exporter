@@ -4,9 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
 	"log"
-
 	"github.com/moeinshahcheraghi/cisco_exporter/connector"
 )
 
@@ -26,7 +24,6 @@ type Client struct {
 // NewClient creates a new client connection
 func NewClient(ssh *connector.SSHConnection, debug bool) *Client {
 	rpc := &Client{conn: ssh, Debug: debug}
-
 	return rpc
 }
 
@@ -52,16 +49,18 @@ func (c *Client) Identify() error {
 	return nil
 }
 
-// RunCommand runs a command on a Cisco device
+// RunCommand runs a command on a Cisco device with enhanced logging
 func (c *Client) RunCommand(cmd string) (string, error) {
 	if c.Debug {
 		log.Printf("Running command on %s: %s\n", c.conn.Host, cmd)
 	}
 	output, err := c.conn.RunCommand(fmt.Sprintf("%s", cmd))
-	if err != nil {
-		println(err.Error())
-		return "", err
+	if c.Debug {
+		if err != nil {
+			log.Printf("Command '%s' on %s failed: %s\n", cmd, c.conn.Host, err.Error())
+		} else {
+			log.Printf("Command '%s' on %s succeeded. Output:\n%s\n", cmd, c.conn.Host, output)
+		}
 	}
-
-	return output, nil
+	return output, err
 }
