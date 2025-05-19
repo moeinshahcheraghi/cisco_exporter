@@ -3,47 +3,43 @@ package facts
 import (
     "errors"
     "regexp"
-    "strconv"
     "strings"
 
-    "github.com/moeinshahcheraghi/cisco_exporter/rpc"
     "github.com/moeinshahcheraghi/cisco_exporter/util"
 )
-
-func ParseMemory(output string) []MemoryFact {
-    // Example matching: Processor  12345678   8765432  3587231
-    memoryRegexp := regexp.MustCompile(`(?i)^(Processor|I/O)\s+(\d+)\s+(\d+)\s+(\d+)`)
-    facts := []MemoryFact{}
+func ParseTopProcessCPU(ostype string, output string) (Process, error) {
+    processRegexp := regexp.MustCompile(`^\s*(\d+)\s+\d+\s+\d+\s+\d+\s+(\d+\.\d+)%\s+\d+\.\d+%\s+\d+\.\d+%\s+\d+\s+(\S+)`)
     lines := strings.Split(output, "\n")
     for _, line := range lines {
-        if matches := memoryRegexp.FindStringSubmatch(line); matches != nil {
-            total := util.Str2float64(matches[2])
-            used := util.Str2float64(matches[3])
-            free := util.Str2float64(matches[4])
-            facts = append(facts, MemoryFact{
-                Type:  matches[1],
-                Total: total,
-                Used:  used,
-                Free:  free,
-            })
+        if matches := processRegexp.FindStringSubmatch(line); matches != nil {
+            return Process{
+                Name:     matches[3],
+                CPUUsage: util.Str2float64(matches[2]),
+            }, nil
         }
     }
-    return facts
+    return Process{}, errors.New("no active process found")
 }
 
-func ParseCPU(output string) CPUFact {
-    // Example: CPU utilization for five seconds: 5%/0%; one minute: 5%; five minutes: 6%
-    cpuRegexp := regexp.MustCompile(`CPU utilization for five seconds: (\d+)%/(\d+)%.*?one minute: (\d+)%.*?five minutes: (\d+)%`)
+func ParseTopProcessMemory(ostype string, output string) (Process, error) {
+    processRegexp := regexp.MustCompile(`^\s*(\d+)\s+\d+\s+\d+\s+\d+\s+(\d+)\s+\S+`)
     lines := strings.Split(output, "\n")
+    var topProcess Process
+    maxMemory := float64(0)
     for _, line := range lines {
-        if matches := cpuRegexp.FindStringSubmatch(line); matches != nil {
-            return CPUFact{
-                FiveSeconds: util.Str2float64(matches[1]),
-                Interrupts:  util.Str2float64(matches[2]),
-                OneMinute:   util.Str2float64(matches[3]),
-                FiveMinutes: util.Str2float64(matches[4]),
+        if matches := processRegexp.FindStringSubmatch(line); matches != nil {
+            memory := util.Str2float64(matches[2])
+            if memory > maxMemory {
+                maxMemory = memory
+                topProcess = Process{
+                    Name:        matches[1],
+                    MemoryUsage: memory,
+                }
             }
         }
     }
-    return CPUFact{} // Return empty on failure (caller should handle)
+    if maxMemory == 0 {
+        return Process{}, errors.New("no process with memory usage found")
+    }
+    return topProcess, nil
 }
