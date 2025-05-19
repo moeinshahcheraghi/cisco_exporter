@@ -3,6 +3,7 @@ package etherchannel
 import (
     "errors"
     "regexp"
+    "strconv" 
     "strings"
     "github.com/moeinshahcheraghi/cisco_exporter/rpc"
     "github.com/moeinshahcheraghi/cisco_exporter/util"
@@ -21,7 +22,11 @@ func Parse(ostype string, output string) (int, []EtherChannelGroup, error) {
     groups := []EtherChannelGroup{}
     for _, line := range lines {
         if matches := groupsTotalRegexp.FindStringSubmatch(line); matches != nil {
-            groupsTotal = util.Str2int(matches[1])
+            var err error
+            groupsTotal, err = strconv.Atoi(matches[1])
+            if err != nil {
+                return 0, nil, err
+            }
         } else if matches := groupRegexp.FindStringSubmatch(line); matches != nil {
             group := EtherChannelGroup{
                 Group:       matches[1],

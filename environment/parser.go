@@ -1,11 +1,11 @@
 package environment
 
 import (
-	"errors"
-	"strings"
-
-	"github.com/moeinshahcheraghi/cisco_exporter/rpc"
-	"github.com/moeinshahcheraghi/cisco_exporter/util"
+    "errors"
+    "regexp" 
+    "strings"
+    "github.com/moeinshahcheraghi/cisco_exporter/rpc"
+    "github.com/moeinshahcheraghi/cisco_exporter/util"
 )
 
 // ✅ Exported function for parsing
@@ -72,7 +72,6 @@ func Parse(ostype string, output string) ([]EnvironmentItem, error) {
 
 	return items, nil
 }
-
 
 func ParseSlotTemperature(ostype string, output string, slot string) (EnvironmentItem, error) {
     if ostype != rpc.IOSXE {

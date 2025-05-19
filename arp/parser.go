@@ -3,8 +3,8 @@ package arp
 import (
     "errors"
     "regexp"
+    "strconv"
     "github.com/moeinshahcheraghi/cisco_exporter/rpc"
-    "github.com/moeinshahcheraghi/cisco_exporter/util"
 )
 
 func Parse(ostype string, output string) (int, error) {
@@ -16,5 +16,9 @@ func Parse(ostype string, output string) (int, error) {
     if matches == nil {
         return 0, errors.New("Total ARP entries not found")
     }
-    return util.Str2int(matches[1]), nil
+    total, err := strconv.Atoi(matches[1])
+    if err != nil {
+        return 0, err
+    }
+    return total, nil
 }
