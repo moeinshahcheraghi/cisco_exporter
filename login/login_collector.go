@@ -6,40 +6,40 @@ import (
     "github.com/prometheus/client_golang/prometheus"
 )
 
-const prefix string = "cisco_login_"
+const prefix string = "cisco_logging_"
 
 var (
-    failuresTotalDesc *prometheus.Desc
+    loginSuccessDesc *prometheus.Desc
 )
 
 func init() {
     l := []string{"target"}
-    failuresTotalDesc = prometheus.NewDesc(prefix+"failures_total", "Total number of login failures", l, nil)
+    loginSuccessDesc = prometheus.NewDesc(prefix+"login_success_total", "Total number of successful logins", l, nil)
 }
 
-type loginCollector struct{}
+type loggingCollector struct{}
 
-func NewCollector() collector.RPCCollector {
-    return &loginCollector{}
+func NewLoggingCollector() collector.RPCCollector {
+    return &loggingCollector{}
 }
 
-func (*loginCollector) Name() string {
-    return "Login"
+func (*loggingCollector) Name() string {
+    return "Logging"
 }
 
-func (*loginCollector) Describe(ch chan<- *prometheus.Desc) {
-    ch <- failuresTotalDesc
+func (*loggingCollector) Describe(ch chan<- *prometheus.Desc) {
+    ch <- loginSuccessDesc
 }
 
-func (c *loginCollector) Collect(client *rpc.Client, ch chan<- prometheus.Metric, labelValues []string) error {
-    out, err := client.RunCommand("show login failures")
+func (c *loggingCollector) Collect(client *rpc.Client, ch chan<- prometheus.Metric, labelValues []string) error {
+    out, err := client.RunCommand("show logging")
     if err != nil {
         return err
     }
-    count, err := Parse(client.OSType, out)
+    count, err := ParseLogging(client.OSType, out)
     if err != nil {
         return err
     }
-    ch <- prometheus.MustNewConstMetric(failuresTotalDesc, prometheus.CounterValue, float64(count), labelValues...)
+    ch <- prometheus.MustNewConstMetric(loginSuccessDesc, prometheus.CounterValue, float64(count), labelValues...)
     return nil
 }

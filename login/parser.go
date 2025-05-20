@@ -21,3 +21,18 @@ func Parse(ostype string, output string) (int, error) {
     }
     return count, nil
 }
+
+func ParseLogging(ostype string, output string) (int, error) {
+    if ostype != rpc.IOSXE && ostype != rpc.NXOS && ostype != rpc.IOS {
+        return 0, errors.New("'show logging' is not implemented for " + ostype)
+    }
+    loginRegexp := regexp.MustCompile(`%SEC_LOGIN-5-LOGIN_SUCCESS`)
+    lines := strings.Split(output, "\n")
+    count := 0
+    for _, line := range lines {
+        if loginRegexp.MatchString(line) {
+            count++
+        }
+    }
+    return count, nil
+}
