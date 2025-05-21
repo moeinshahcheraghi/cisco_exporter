@@ -1,4 +1,4 @@
-package main
+package collector
 
 import (
     "github.com/moeinshahcheraghi/cisco_exporter/arp"
