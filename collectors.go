@@ -48,6 +48,7 @@ func (c *collectors) initCollectorsForDevice(device *connector.Device) {
     c.addCollectorIfEnabledForDevice(device, "spanningtree", f.SpanningTree, spanningtree.NewCollector)
     c.addCollectorIfEnabledForDevice(device, "arp", f.ARP, arp.NewCollector)
     c.addCollectorIfEnabledForDevice(device, "logging", f.Login, login.NewLoggingCollector)
+    c.addCollectorIfEnabledForDevice(device, "login", f.Login, login.NewLoggingCollector)
 }
 
 func (c *collectors) addCollectorIfEnabledForDevice(device *connector.Device, key string, enabled *bool, newCollector func() collector.RPCCollector) {
