@@ -46,3 +46,46 @@ func (c *opticsCollector) ParseTransceiver(ostype string, output string) (Optics
 		RxPower: util.Str2float64(matches[2]),
 	}, nil
 }
+
+
+func (c *opticsCollector) ParseAllTransceivers(ostype string, output string) (map[string]Optics, error) {
+    items := make(map[string]Optics)
+    if ostype == rpc.IOS {
+        lines := strings.Split(output, "\n")
+        re := regexp.MustCompile(`(\S+)\s+((?:-)?\d+\.\d+)\s+((?:-)?\d+\.\d+)`)
+        for _, line := range lines {
+            if strings.HasPrefix(line, "Interface") || strings.HasPrefix(line, "----------") {
+                continue
+            }
+            matches := re.FindStringSubmatch(line)
+            if matches != nil {
+                items[matches[1]] = Optics{
+                    RxPower: util.Str2float64(matches[2]),
+                    TxPower: util.Str2float64(matches[3]),
+                }
+            }
+        }
+    } else if ostype == rpc.NXOS {
+        sections := strings.Split(output, "\n\n")
+        reTx := regexp.MustCompile(`Tx Power\s*((?:-)?\d+\.\d+)`)
+        reRx := regexp.MustCompile(`Rx Power\s*((?:-)?\d+\.\d+)`)
+        for _, section := range sections {
+            lines := strings.Split(section, "\n")
+            if len(lines) > 0 && strings.HasPrefix(lines[0], "Ethernet") {
+                iface := strings.TrimSpace(lines[0])
+                var tx, rx float64
+                for _, line := range lines {
+                    if matches := reTx.FindStringSubmatch(line); matches != nil {
+                        tx = util.Str2float64(matches[1])
+                    } else if matches := reRx.FindStringSubmatch(line); matches != nil {
+                        rx = util.Str2float64(matches[1])
+                    }
+                }
+                items[iface] = Optics{RxPower: rx, TxPower: tx}
+            }
+        }
+    } else {
+        return nil, errors.New("Unsupported OS type for batch parsing")
+    }
+    return items, nil
+}

@@ -1,8 +1,8 @@
 replicaCount: 1
 
 image:
-  repository: moeinshah/cisco_exporter
-  tag: v11
+  repository: repo-afra.snappfood.dev/moeinshah/cisco_exporter
+  tag: v6
   pullPolicy: IfNotPresent
 
 service:

@@ -1,72 +1,79 @@
 package facts
 
 import (
-    "errors"
-    "regexp"
-    "strconv"
-    "strings"
+	"errors"
+	"regexp"
+	"strings"
+
+	"github.com/moeinshahcheraghi/cisco_exporter/rpc"
+	"github.com/moeinshahcheraghi/cisco_exporter/util"
 )
 
-// ParseMemory parses the output of "show processes memory"
-func ParseMemory(output string) []MemoryFact {
-    re := regexp.MustCompile(`Processor Pool Total:\s+(\d+)\s+Used:\s+(\d+)`)
-    matches := re.FindStringSubmatch(output)
-    if matches != nil {
-        total, _ := strconv.ParseFloat(matches[1], 64)
-        used, _ := strconv.ParseFloat(matches[2], 64)
-        return []MemoryFact{{Total: total, Used: used}}
-    }
-    return []MemoryFact{}
+// ParseVersion parses cli output and tries to find the version number of the running OS
+func (c *factsCollector) ParseVersion(ostype string, output string) (VersionFact, error) {
+	if ostype != rpc.IOSXE && ostype != rpc.NXOS && ostype != rpc.IOS {
+		return VersionFact{}, errors.New("'show version' is not implemented for " + ostype)
+	}
+	versionRegexp := make(map[string]*regexp.Regexp)
+	versionRegexp[rpc.IOSXE], _ = regexp.Compile(`^.*, Version (.+) -.*$`)
+	versionRegexp[rpc.IOS], _ = regexp.Compile(`^.*, Version (.+),.*$`)
+	versionRegexp[rpc.NXOS], _ = regexp.Compile(`^\s+NXOS: version (.*)$`)
+
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		matches := versionRegexp[ostype].FindStringSubmatch(line)
+		if matches == nil {
+			continue
+		}
+		return VersionFact{Version: ostype + "-" + matches[1]}, nil
+	}
+	return VersionFact{}, errors.New("Version string not found")
 }
 
-// ParseCPU parses the output of "show processes cpu"
-func ParseCPU(output string) CPUFact {
-    re := regexp.MustCompile(`CPU utilization for five seconds: (\d+)%.*?one minute: (\d+)%.*?five minutes: (\d+)%`)
-    matches := re.FindStringSubmatch(output)
-    if matches != nil {
-        fiveSeconds, _ := strconv.ParseFloat(matches[1], 64)
-        oneMinute, _ := strconv.ParseFloat(matches[2], 64)
-        fiveMinutes, _ := strconv.ParseFloat(matches[3], 64)
-        return CPUFact{FiveSeconds: fiveSeconds, OneMinute: oneMinute, FiveMinutes: fiveMinutes}
-    }
-    return CPUFact{}
+// ParseMemory parses cli output and tries to find current memory usage
+func (c *factsCollector) ParseMemory(ostype string, output string) ([]MemoryFact, error) {
+	if ostype != rpc.IOSXE && ostype != rpc.IOS {
+		return nil, errors.New("'show process memory' is not implemented for " + ostype)
+	}
+	memoryRegexp, _ := regexp.Compile(`^\s*(\S*) Pool Total:\s*(\d+) Used:\s*(\d+) Free:\s*(\d+)\s*$`)
+
+	items := []MemoryFact{}
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		matches := memoryRegexp.FindStringSubmatch(line)
+		if matches == nil {
+			continue
+		}
+		item := MemoryFact{
+			Type:  matches[1],
+			Total: util.Str2float64(matches[2]),
+			Used:  util.Str2float64(matches[3]),
+			Free:  util.Str2float64(matches[4]),
+		}
+		items = append(items, item)
+	}
+	return items, nil
 }
 
-// ParseTopProcessCPU parses the output of "show processes cpu sorted | exclude 0.00%"
-func ParseTopProcessCPU(ostype string, output string) (Process, error) {
-    lines := strings.Split(output, "\n")
-    for _, line := range lines {
-        if strings.Contains(line, "PID") {
-            continue
-        }
-        fields := strings.Fields(line)
-        if len(fields) >= 9 {
-            name := fields[8]
-            cpuUsage, _ := strconv.ParseFloat(fields[5], 64)
-            return Process{Name: name, CPUUsage: cpuUsage}, nil
-        }
-    }
-    return Process{}, errors.New("no top process found")
-}
+// ParseCPU parses cli output and tries to find current CPU utilization
+func (c *factsCollector) ParseCPU(ostype string, output string) (CPUFact, error) {
+	if ostype != rpc.IOSXE && ostype != rpc.IOS {
+		return CPUFact{}, errors.New("'show process cpu' is not implemented for " + ostype)
+	}
+	memoryRegexp, _ := regexp.Compile(`^\s*CPU utilization for five seconds: (\d+)%\/(\d+)%; one minute: (\d+)%; five minutes: (\d+)%.*$`)
 
-// ParseTopProcessMemory parses the output of "show processes memory"
-func ParseTopProcessMemory(ostype string, output string) (Process, error) {
-    re := regexp.MustCompile(`(\d+)\s+\d+\s+\d+\s+(\d+)\s+\S+`)
-    lines := strings.Split(output, "\n")
-    var topProcess Process
-    maxMemory := float64(0)
-    for _, line := range lines {
-        matches := re.FindStringSubmatch(line)
-        if matches != nil {
-            memory, _ := strconv.ParseFloat(matches[2], 64)
-            if memory > maxMemory {
-                maxMemory = memory
-                topProcess = Process{Name: matches[1], MemoryUsage: memory}
-            }
-        }
-    }
-    if maxMemory == 0 {
-        return Process{}, errors.New("no process with memory usage found")
-    }
-    return topProcess, nil
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		matches := memoryRegexp.FindStringSubmatch(line)
+		if matches == nil {
+			continue
+		}
+		return CPUFact{
+			FiveSeconds: util.Str2float64(matches[1]),
+			Interrupts:  util.Str2float64(matches[2]),
+			OneMinute:   util.Str2float64(matches[3]),
+			FiveMinutes: util.Str2float64(matches[4]),
+		}, nil
+	}
+	return CPUFact{}, errors.New("Version string not found")
 }

@@ -1,79 +1,72 @@
 package environment
 
 import (
-    "fmt"
-    "github.com/moeinshahcheraghi/cisco_exporter/collector"
-    "github.com/moeinshahcheraghi/cisco_exporter/rpc"
-    "github.com/prometheus/client_golang/prometheus"
+	"log"
+
+	"github.com/moeinshahcheraghi/cisco_exporter/rpc"
+	"github.com/moeinshahcheraghi/cisco_exporter/collector"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const prefix string = "cisco_environment_"
 
 var (
-    statusDesc         *prometheus.Desc
-    temperatureDesc    *prometheus.Desc
-    slotTemperatureDesc *prometheus.Desc
+	temperaturesDesc *prometheus.Desc
+	powerSupplyDesc  *prometheus.Desc
 )
 
 func init() {
-    l := []string{"target", "name"}
-    statusDesc = prometheus.NewDesc(prefix+"status", "Status of environment item", l, nil)
-    temperatureDesc = prometheus.NewDesc(prefix+"temperature_celsius", "Temperature of environment item", l, nil)
-    slotTemperatureDesc = prometheus.NewDesc(prefix+"slot_temperature_celsius", "Temperature of hardware slot", append(l, "slot"), nil)
+	l := []string{"target", "item"}
+	temperaturesDesc = prometheus.NewDesc(prefix+"sensor_temp", "Sensor temperatures", l, nil)
+	l = append(l, "status")
+	powerSupplyDesc = prometheus.NewDesc(prefix+"power_up", "Status of power supplies (1 OK, 0 Something is wrong)", l, nil)
 }
 
 type environmentCollector struct{}
 
+// NewCollector creates a new collector
 func NewCollector() collector.RPCCollector {
-    return &environmentCollector{}
+	return &environmentCollector{}
 }
 
+// Name returns the name of the collector
 func (*environmentCollector) Name() string {
-    return "Environment"
+	return "Environment"
 }
 
+// Describe describes the metrics
 func (*environmentCollector) Describe(ch chan<- *prometheus.Desc) {
-    ch <- statusDesc
-    ch <- temperatureDesc
-    ch <- slotTemperatureDesc
+	ch <- temperaturesDesc
+	ch <- powerSupplyDesc
 }
 
+// Collect collects metrics from Cisco
 func (c *environmentCollector) Collect(client *rpc.Client, ch chan<- prometheus.Metric, labelValues []string) error {
-    out, err := client.RunCommand("show environment")
-    if err != nil {
-        return err
-    }
-    items, err := Parse(client.OSType, out)
-    if err != nil {
-        return err
-    }
-    for _, item := range items {
-        l := append(labelValues, item.Name)
-        if item.IsTemp {
-            ch <- prometheus.MustNewConstMetric(temperatureDesc, prometheus.GaugeValue, item.Temperature, l...)
-        } else {
-            val := 0.0
-            if item.OK {
-                val = 1.0
-            }
-            ch <- prometheus.MustNewConstMetric(statusDesc, prometheus.GaugeValue, val, l...)
-        }
-    }
+	out, err := client.RunCommand("show environment all")
+	if err != nil {
+		return err
+	}
+	items, err := Parse(client.OSType, out)
+	if err != nil {
+		if client.Debug {
+			log.Printf("Parse environment for %s: %s\n", labelValues[0], err.Error())
+		}
+		return nil
+	}
 
-    if client.OSType == rpc.IOSXE {
-        for slot := 0; slot < 10; slot++ {
-            cmd := fmt.Sprintf("show platform hardware slot %d env temperature", slot)
-            out, err := client.RunCommand(cmd)
-            if err != nil {
-                continue
-            }
-            item, err := ParseSlotTemperature(client.OSType, out, fmt.Sprintf("%d", slot))
-            if err != nil {
-                continue
-            }
-            l := append(labelValues, item.Name, item.Slot)
-            ch <- prometheus.MustNewConstMetric(slotTemperatureDesc, prometheus.GaugeValue, item.Temperature, l...)
-        }
-    }
-    return nil
+	for _, item := range items {
+		l := append(labelValues, item.Name)
+		if item.IsTemp {
+			ch <- prometheus.MustNewConstMetric(temperaturesDesc, prometheus.GaugeValue, float64(item.Temperature), l...)
+		} else {
+			val := 0
+			if item.OK {
+				val = 1
+			}
+			l = append(l, item.Status)
+			ch <- prometheus.MustNewConstMetric(powerSupplyDesc, prometheus.GaugeValue, float64(val), l...)
+		}
+	}
+
+	return nil
 }

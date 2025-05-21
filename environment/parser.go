@@ -1,11 +1,11 @@
 package environment
 
 import (
-    "errors"
-    "regexp" 
-    "strings"
-    "github.com/moeinshahcheraghi/cisco_exporter/rpc"
-    "github.com/moeinshahcheraghi/cisco_exporter/util"
+	"errors"
+	"strings"
+
+	"github.com/moeinshahcheraghi/cisco_exporter/rpc"
+	"github.com/moeinshahcheraghi/cisco_exporter/util"
 )
 
 // ✅ Exported function for parsing
@@ -71,21 +71,4 @@ func Parse(ostype string, output string) ([]EnvironmentItem, error) {
 	}
 
 	return items, nil
-}
-
-func ParseSlotTemperature(ostype string, output string, slot string) (EnvironmentItem, error) {
-    if ostype != rpc.IOSXE {
-        return EnvironmentItem{}, errors.New("'show platform hardware slot X env temperature' is only for IOSXE")
-    }
-    tempRegexp := regexp.MustCompile(`Temperature:\s+(\d+\.\d+)\s+Celsius`)
-    matches := tempRegexp.FindStringSubmatch(output)
-    if matches == nil {
-        return EnvironmentItem{}, errors.New("Temperature not found")
-    }
-    return EnvironmentItem{
-        Name:        "Slot " + slot + " Temperature",
-        IsTemp:      true,
-        Temperature: util.Str2float64(matches[1]),
-        Slot:        slot,
-    }, nil
 }
