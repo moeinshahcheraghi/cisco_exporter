@@ -88,7 +88,7 @@ func (c *ciscoCollector) collectForHost(device *connector.Device, ch chan<- prom
 
     for _, col := range c.collectors.collectorsForDevice(device) {
         collectorWg.Add(1)
-        go func(col collector.RPCCollector) {
+        go func(col rpc.RPCCollector) {
             defer collectorWg.Done()
             ct := time.Now()
             err := col.Collect(client, ch, l)
