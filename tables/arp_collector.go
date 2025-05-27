@@ -39,7 +39,7 @@ func (c *arpCollector) Collect(client *rpc.Client, ch chan<- prometheus.Metric, 
 }
 
 func parseARP(output string) float64 {
-	re := regexp.MustCompile(`Total number of entries:\s*(\d+)`)
+	re := regexp.MustCompile(`(\d+) IP ARP entries`)
 	matches := re.FindStringSubmatch(output)
 	if matches != nil {
 		return util.Str2float64(matches[1])

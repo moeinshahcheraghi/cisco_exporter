@@ -37,10 +37,11 @@ func (c *macCollector) Collect(client *rpc.Client, ch chan<- prometheus.Metric, 
 }
 
 func parseMAC(output string) float64 {
-	re := regexp.MustCompile(`Total Mac Addresses for this criterion:\s*(\d+)`)
-	matches := re.FindStringSubmatch(output)
-	if matches != nil {
-		return util.Str2float64(matches[1])
+	re := regexp.MustCompile(`Total Mac Addresses\s+:\s*(\d+)`)
+	matches := re.FindAllStringSubmatch(output, -1)
+	total := 0.0
+	for _, match := range matches {
+		total += util.Str2float64(match[1])
 	}
-	return 0
+	return total
 }
