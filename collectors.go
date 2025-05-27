@@ -10,6 +10,7 @@ import (
 	"github.com/moeinshahcheraghi/cisco_exporter/interfaces"
 	"github.com/moeinshahcheraghi/cisco_exporter/optics"
 	"github.com/moeinshahcheraghi/cisco_exporter/stackport"
+	"github.com/moeinshahcheraghi/cisco_exporter/tables"
 )
 
 type collectors struct {
@@ -43,6 +44,10 @@ func (c *collectors) initCollectorsForDevice(device *connector.Device) {
 	c.addCollectorIfEnabledForDevice(device, "optics", f.Optics, optics.NewCollector)
 	c.addCollectorIfEnabledForDevice(device, "stackport", f.StackPort, stackport.NewCollector) 
 
+	c.addCollectorIfEnabledForDevice(device, "tablesARP", f.TablesARP, tables.NewARPCollector)
+	c.addCollectorIfEnabledForDevice(device, "tablesMAC", f.TablesMAC, tables.NewMACCollector)
+	c.addCollectorIfEnabledForDevice(device, "tablesRouteIPv4", f.TablesRouteIPv4, tables.NewRouteIPv4Collector)
+	c.addCollectorIfEnabledForDevice(device, "tablesRouteIPv6", f.TablesRouteIPv6, tables.NewRouteIPv6Collector)
 }
 
 func (c *collectors) addCollectorIfEnabledForDevice(device *connector.Device, key string, enabled *bool, newCollector func() collector.RPCCollector) {

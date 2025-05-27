@@ -38,6 +38,10 @@ type FeatureConfig struct {
 	Interfaces  *bool `yaml:"interfaces,omitempty"`
 	Optics      *bool `yaml:"optics,omitempty"`
 	StackPort   *bool `yaml:"stack_port,omitempty"`
+	TablesARP       *bool `yaml:"tables_arp,omitempty"`
+	TablesMAC       *bool `yaml:"tables_mac,omitempty"`
+	TablesRouteIPv4 *bool `yaml:"tables_route_ipv4,omitempty"`
+	TablesRouteIPv6 *bool `yaml:"tables_route_ipv6,omitempty"`
 }
 
 func New() *Config {
@@ -106,6 +110,14 @@ func (c *Config) setDefaultValues() {
 	f.Optics = &optics
 	stackPort := true
 	f.StackPort = &stackPort
+	tablesARP := true
+	c.Features.TablesARP = &tablesARP
+	tablesMAC := true
+	c.Features.TablesMAC = &tablesMAC
+	tablesRouteIPv4 := true
+	c.Features.TablesRouteIPv4 = &tablesRouteIPv4
+	tablesRouteIPv6 := true
+	c.Features.TablesRouteIPv6 = &tablesRouteIPv6
 }
 
 func (c *Config) DevicesFromTargets(sshHosts string) {
