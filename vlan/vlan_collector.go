@@ -3,7 +3,6 @@ package vlan
 import (
     "regexp"
     "strings"
-    "strconv"
     "github.com/moeinshahcheraghi/cisco_exporter/collector"
     "github.com/moeinshahcheraghi/cisco_exporter/rpc"
     "github.com/prometheus/client_golang/prometheus"
