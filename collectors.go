@@ -43,11 +43,15 @@ func (c *collectors) initCollectorsForDevice(device *connector.Device) {
 	c.addCollectorIfEnabledForDevice(device, "interfaces", f.Interfaces, interfaces.NewCollector)
 	c.addCollectorIfEnabledForDevice(device, "optics", f.Optics, optics.NewCollector)
 	c.addCollectorIfEnabledForDevice(device, "stackport", f.StackPort, stackport.NewCollector) 
-
 	c.addCollectorIfEnabledForDevice(device, "tablesARP", f.TablesARP, tables.NewARPCollector)
 	c.addCollectorIfEnabledForDevice(device, "tablesMAC", f.TablesMAC, tables.NewMACCollector)
 	c.addCollectorIfEnabledForDevice(device, "tablesRouteIPv4", f.TablesRouteIPv4, tables.NewRouteIPv4Collector)
 	c.addCollectorIfEnabledForDevice(device, "tablesRouteIPv6", f.TablesRouteIPv6, tables.NewRouteIPv6Collector)
+	c.addCollectorIfEnabledForDevice(device, "uptime", f.Uptime, uptime.NewCollector)
+    c.addCollectorIfEnabledForDevice(device, "stp", f.STP, stp.NewCollector)
+    c.addCollectorIfEnabledForDevice(device, "vlan", f.VLAN, vlan.NewCollector)
+    c.addCollectorIfEnabledForDevice(device, "qos", f.QoS, qos.NewCollector)
+    c.addCollectorIfEnabledForDevice(device, "acl", f.ACL, acl.NewCollector)
 }
 
 func (c *collectors) addCollectorIfEnabledForDevice(device *connector.Device, key string, enabled *bool, newCollector func() collector.RPCCollector) {

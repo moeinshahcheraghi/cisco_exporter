@@ -42,6 +42,11 @@ type FeatureConfig struct {
 	TablesMAC       *bool `yaml:"tables_mac,omitempty"`
 	TablesRouteIPv4 *bool `yaml:"tables_route_ipv4,omitempty"`
 	TablesRouteIPv6 *bool `yaml:"tables_route_ipv6,omitempty"`
+    Uptime      *bool `yaml:"uptime,omitempty"`
+    STP         *bool `yaml:"stp,omitempty"`
+    VLAN        *bool `yaml:"vlan,omitempty"`
+    QoS         *bool `yaml:"qos,omitempty"`
+    ACL         *bool `yaml:"acl,omitempty"`
 }
 
 func New() *Config {
@@ -118,6 +123,17 @@ func (c *Config) setDefaultValues() {
 	c.Features.TablesRouteIPv4 = &tablesRouteIPv4
 	tablesRouteIPv6 := true
 	c.Features.TablesRouteIPv6 = &tablesRouteIPv6
+    uptime := true
+    c.Features.Uptime = &uptime
+    stp := true
+    c.Features.STP = &stp
+    vlan := true
+    c.Features.VLAN = &vlan
+    qos := true
+    c.Features.QoS = &qos
+    acl := true
+    c.Features.ACL = &acl
+
 }
 
 func (c *Config) DevicesFromTargets(sshHosts string) {

@@ -34,8 +34,13 @@ var (
 	factsEnabled       = flag.Bool("facts.enabled", true, "Scrape system metrics")
 	interfacesEnabled  = flag.Bool("interfaces.enabled", true, "Scrape interface metrics")
 	opticsEnabled      = flag.Bool("optics.enabled", true, "Scrape optic metrics")
+	stackportEnabled   = flag.Bool("stackport.enabled", true, "Scrape stack port metrics")
+	uptimeEnabled      = flag.Bool("uptime.enabled", true, "Scrape uptime metrics")
+	stpEnabled         = flag.Bool("stp.enabled", true, "Scrape spanning tree metrics")
+	vlanEnabled        = flag.Bool("vlan.enabled", true, "Scrape VLAN metrics")
+	qosEnabled         = flag.Bool("qos.enabled", true, "Scrape QoS metrics")
+	aclEnabled         = flag.Bool("acl.enabled", true, "Scrape ACL metrics")
 	configFile         = flag.String("config.file", "", "Path to config file")
-	stackportEnabled = flag.Bool("stackport.enabled", true, "Scrape stack port metrics") 
 	devices            []*connector.Device
 	cfg                *config.Config
 )
@@ -114,6 +119,11 @@ func loadConfigFromFlags() *config.Config {
 	f.Facts = factsEnabled
 	f.Interfaces = interfacesEnabled
 	f.Optics = opticsEnabled
+	f.Uptime = uptimeEnabled
+	f.STP = stpEnabled
+	f.VLAN = vlanEnabled
+	f.QoS = qosEnabled
+	f.ACL = aclEnabled
 
 	return c
 }
