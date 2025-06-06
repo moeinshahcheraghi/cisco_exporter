@@ -11,6 +11,12 @@ import (
 	"github.com/moeinshahcheraghi/cisco_exporter/optics"
 	"github.com/moeinshahcheraghi/cisco_exporter/stackport"
 	"github.com/moeinshahcheraghi/cisco_exporter/tables"
+	"github.com/moeinshahcheraghi/cisco_exporter/uptime"
+    "github.com/moeinshahcheraghi/cisco_exporter/stp"
+    "github.com/moeinshahcheraghi/cisco_exporter/vlan"
+    "github.com/moeinshahcheraghi/cisco_exporter/qos"
+    "github.com/moeinshahcheraghi/cisco_exporter/acl"
+
 )
 
 type collectors struct {
