@@ -47,7 +47,7 @@ func (c *stpCollector) Collect(client *rpc.Client, ch chan<- prometheus.Metric, 
 }
 
 func parseSTPInstances(output string) (int, error) {
-    re := regexp.MustCompile(`Total Instances: (\d+)`)
+    re := regexp.MustCompile(`(\d+)\s+vlans`)
     matches := re.FindStringSubmatch(output)
     if matches == nil {
         return 0, errors.New("STP instances not found")

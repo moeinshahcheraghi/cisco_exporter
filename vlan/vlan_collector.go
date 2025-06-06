@@ -48,7 +48,7 @@ func (c *vlanCollector) Collect(client *rpc.Client, ch chan<- prometheus.Metric,
 func parseVLANCount(output string) (int, error) {
     lines := strings.Split(output, "\n")
     count := 0
-    re := regexp.MustCompile(`^\d+\s+`)
+    re := regexp.MustCompile(`^\d+\s+\S+\s+active`)
     for _, line := range lines {
         if re.MatchString(line) {
             count++
