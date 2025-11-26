@@ -1,15 +1,13 @@
 package main
 
 import (
-	"context"
-	"sync"
-	"time"
-
-	"github.com/moeinshahcheraghi/cisco_exporter/collector"
-	"github.com/moeinshahcheraghi/cisco_exporter/connector"
-	"github.com/moeinshahcheraghi/cisco_exporter/rpc"
-	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
+    "time"
+    "sync"
+    "github.com/moeinshahcheraghi/cisco_exporter/collector"
+    "github.com/moeinshahcheraghi/cisco_exporter/connector"
+    "github.com/moeinshahcheraghi/cisco_exporter/rpc"
+    "github.com/prometheus/client_golang/prometheus"
+    log "github.com/sirupsen/logrus"
 )
 
 const prefix = "cisco_"
@@ -20,11 +18,13 @@ var (
 	upDesc                      *prometheus.Desc
 )
 
+
 func init() {
 	upDesc = prometheus.NewDesc(prefix+"up", "Scrape of target was successful", []string{"target"}, nil)
 	scrapeDurationDesc = prometheus.NewDesc(prefix+"collector_duration_seconds", "Duration of a collector scrape for one target", []string{"target"}, nil)
 	scrapeCollectorDurationDesc = prometheus.NewDesc(prefix+"collect_duration_seconds", "Duration of a scrape by collector and target", []string{"target", "collector"}, nil)
 }
+
 
 type ciscoCollector struct {
 	devices    []*connector.Device
@@ -38,6 +38,7 @@ func newCiscoCollector(devices []*connector.Device) *ciscoCollector {
 	}
 }
 
+// Describe implements prometheus.Collector interface
 func (c *ciscoCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- upDesc
 	ch <- scrapeDurationDesc
@@ -48,141 +49,68 @@ func (c *ciscoCollector) Describe(ch chan<- *prometheus.Desc) {
 	}
 }
 
+// Collect implements prometheus.Collector interface
 func (c *ciscoCollector) Collect(ch chan<- prometheus.Metric) {
-	maxConcurrent := 5
-	sem := make(chan struct{}, maxConcurrent)
-	
 	wg := &sync.WaitGroup{}
+
 	wg.Add(len(c.devices))
-	
 	for _, d := range c.devices {
-		sem <- struct{}{} // Acquire
-		go func(device *connector.Device) {
-			defer func() {
-				<-sem // Release
-				wg.Done()
-			}()
-			c.collectForHost(device, ch)
-		}(d)
+		go c.collectForHost(d, ch, wg)
 	}
 
 	wg.Wait()
 }
 
-func (c *ciscoCollector) collectForHost(device *connector.Device, ch chan<- prometheus.Metric) {
-	l := []string{device.Host}
+func (c *ciscoCollector) collectForHost(device *connector.Device, ch chan<- prometheus.Metric, wg *sync.WaitGroup) {
+    defer wg.Done()
 
-	t := time.Now()
-	defer func() {
-		ch <- prometheus.MustNewConstMetric(scrapeDurationDesc, prometheus.GaugeValue, time.Since(t).Seconds(), l...)
-	}()
+    l := []string{device.Host}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
+    t := time.Now()
+    defer func() {
+        ch <- prometheus.MustNewConstMetric(scrapeDurationDesc, prometheus.GaugeValue, time.Since(t).Seconds(), l...)
+    }()
 
-	conn, err := connector.NewSSSHConnection(device, cfg)
-	if err != nil {
-		log.Errorln(err)
-		ch <- prometheus.MustNewConstMetric(upDesc, prometheus.GaugeValue, 0, l...)
-		return
-	}
-	defer conn.Close()
+    conn, err := connector.NewSSSHConnection(device, cfg)
+    if err != nil {
+        log.Errorln(err)
+        ch <- prometheus.MustNewConstMetric(upDesc, prometheus.GaugeValue, 0, l...)
+        return
+    }
+    defer conn.Close()
 
-	ch <- prometheus.MustNewConstMetric(upDesc, prometheus.GaugeValue, 1, l...)
+    ch <- prometheus.MustNewConstMetric(upDesc, prometheus.GaugeValue, 1, l...)
 
-	client := rpc.NewClient(conn, cfg.Debug)
-	err = client.Identify()
-	if err != nil {
-		log.Errorln(device.Host + ": " + err.Error())
-		return
-	}
+    client := rpc.NewClient(conn, cfg.Debug)
+    err = client.Identify()
+    if err != nil {
+        log.Errorln(device.Host + ": " + err.Error())
+        return
+    }
 
-	collectors := c.collectors.collectorsForDevice(device)
-	
-	numWorkers := 3 
-	collectorChan := make(chan collector.RPCCollector, len(collectors))
-	
-	for _, col := range collectors {
-		collectorChan <- col
-	}
-	close(collectorChan)
+    var mu sync.Mutex
 
-	wg := &sync.WaitGroup{}
-	
-	for i := 0; i < numWorkers; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for col := range collectorChan {
-				select {
-				case <-ctx.Done():
-					log.Warnf("Context cancelled for %s", device.Host)
-					return
-				default:
-					c.collectFromCollector(ctx, client, col, ch, l)
-				}
-			}
-		}()
-	}
+    collectorWg := &sync.WaitGroup{}
+    collectors := c.collectors.collectorsForDevice(device)
+    collectorWg.Add(len(collectors))
 
-	wg.Wait()
-	
-	client.ClearCache()
-}
+    for _, col := range collectors {
+        go func(col collector.RPCCollector) {
+            defer collectorWg.Done()
 
-func (c *ciscoCollector) collectFromCollector(
-	ctx context.Context,
-	client *rpc.Client,
-	col collector.RPCCollector,
-	ch chan<- prometheus.Metric,
-	labelValues []string,
-) {
-	ct := time.Now()
-	
-	resultChan := make(chan error, 1)
-	metricsChan := make(chan prometheus.Metric, 100) 
-	
-	go func() {
-		metrics := []prometheus.Metric{}
-		for m := range metricsChan {
-			metrics = append(metrics, m)
-		}
-		
-		for _, m := range metrics {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				ch <- m
-			}
-		}
-	}()
-	
-	go func() {
-		err := col.Collect(client, metricsChan, labelValues)
-		close(metricsChan)
-		resultChan <- err
-	}()
+            ct := time.Now()
 
-	select {
-	case <-ctx.Done():
-		log.Warnf("Collector %s timed out for %s", col.Name(), labelValues[0])
-		return
-	case err := <-resultChan:
-		if err != nil && err.Error() != "EOF" {
-			log.Errorln(col.Name() + ": " + err.Error())
-		}
-	}
+            mu.Lock()
+            err := col.Collect(client, ch, l)
+            mu.Unlock()
 
-	duration := time.Since(ct).Seconds()
-	ch <- prometheus.MustNewConstMetric(
-		scrapeCollectorDurationDesc,
-		prometheus.GaugeValue,
-		duration,
-		append(labelValues, col.Name())...,
-	)
-	
-	if cfg.Debug {
-		log.Infof("Collector %s for %s completed in %.2fs", col.Name(), labelValues[0], duration)
-	}
+            if err != nil && err.Error() != "EOF" {
+                log.Errorln(col.Name() + ": " + err.Error())
+            }
+
+            ch <- prometheus.MustNewConstMetric(scrapeCollectorDurationDesc, prometheus.GaugeValue, time.Since(ct).Seconds(), append(l, col.Name())...)
+        }(col)
+    }
+
+    collectorWg.Wait()
 }

@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 	"log"
-	"sync"
-	"time"
 	"github.com/moeinshahcheraghi/cisco_exporter/connector"
 )
 
@@ -14,31 +12,24 @@ const (
 	IOSXE string = "IOSXE"
 	NXOS  string = "NXOS"
 	IOS   string = "IOS"
+	
 )
-
-type cacheEntry struct {
-	value     string
-	timestamp time.Time
-}
 
 // Client sends commands to a Cisco device
 type Client struct {
-	conn       *connector.SSHConnection
-	Debug      bool
-	OSType     string
-	cache      map[string]*cacheEntry
-	cacheMutex sync.RWMutex
-	cacheTTL   time.Duration
+    conn   *connector.SSHConnection
+    Debug  bool
+    OSType string
+    cache  map[string]string
 }
 
 // NewClient creates a new client connection
 func NewClient(ssh *connector.SSHConnection, debug bool) *Client {
-	return &Client{
-		conn:     ssh,
-		Debug:    debug,
-		cache:    make(map[string]*cacheEntry),
-		cacheTTL: 30 * time.Second,
-	}
+    return &Client{
+        conn:  ssh,
+        Debug: debug,
+        cache: make(map[string]string),
+    }
 }
 
 // Identify tries to identify the OS running on a Cisco device
@@ -63,59 +54,27 @@ func (c *Client) Identify() error {
 	return nil
 }
 
-// RunCommand runs a command with improved caching and timeout handling
+// RunCommand runs a command on a Cisco device with enhanced logging
 func (c *Client) RunCommand(cmd string) (string, error) {
-	c.cacheMutex.RLock()
-	if entry, ok := c.cache[cmd]; ok {
-		if time.Since(entry.timestamp) < c.cacheTTL {
-			c.cacheMutex.RUnlock()
-			if c.Debug {
-				log.Printf("Cache hit for command '%s' on %s (age: %v)\n", 
-					cmd, c.conn.Host, time.Since(entry.timestamp))
-			}
-			return entry.value, nil
-		}
-	}
-	c.cacheMutex.RUnlock()
-
-	if c.Debug {
-		log.Printf("Running command on %s: %s\n", c.conn.Host, cmd)
-	}
-
-	start := time.Now()
-	output, err := c.conn.RunCommand(fmt.Sprintf("%s", cmd))
-	duration := time.Since(start)
-
-	if err == nil {
-		c.cacheMutex.Lock()
-		c.cache[cmd] = &cacheEntry{
-			value:     output,
-			timestamp: time.Now(),
-		}
-		c.cacheMutex.Unlock()
-
-		if c.Debug {
-			log.Printf("Command '%s' on %s succeeded in %v. Output cached.\n", 
-				cmd, c.conn.Host, duration)
-		}
-	} else {
-		if c.Debug {
-			log.Printf("Command '%s' on %s failed after %v: %s\n", 
-				cmd, c.conn.Host, duration, err.Error())
-		}
-	}
-
-	return output, err
-}
-
-func (c *Client) ClearCache() {
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-	
-	now := time.Now()
-	for cmd, entry := range c.cache {
-		if now.Sub(entry.timestamp) > c.cacheTTL {
-			delete(c.cache, cmd)
-		}
-	}
+    if output, ok := c.cache[cmd]; ok {
+        if c.Debug {
+            log.Printf("Cache hit for command '%s' on %s\n", cmd, c.conn.Host)
+        }
+        return output, nil
+    }
+    if c.Debug {
+        log.Printf("Running command on %s: %s\n", c.conn.Host, cmd)
+    }
+    output, err := c.conn.RunCommand(fmt.Sprintf("%s", cmd))
+    if err == nil {
+        c.cache[cmd] = output
+    }
+    if c.Debug {
+        if err != nil {
+            log.Printf("Command '%s' on %s failed: %s\n", cmd, c.conn.Host, err.Error())
+        } else {
+            log.Printf("Command '%s' on %s succeeded. Output cached.\n", cmd, c.conn.Host)
+        }
+    }
+    return output, err
 }
