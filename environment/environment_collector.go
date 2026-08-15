@@ -3,8 +3,8 @@ package environment
 import (
 	"log"
 
-	"github.com/moeinshahcheraghi/cisco_exporter/rpc"
 	"github.com/moeinshahcheraghi/cisco_exporter/collector"
+	"github.com/moeinshahcheraghi/cisco_exporter/rpc"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -42,7 +42,15 @@ func (*environmentCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect collects metrics from Cisco
 func (c *environmentCollector) Collect(client *rpc.Client, ch chan<- prometheus.Metric, labelValues []string) error {
-	out, err := client.RunCommand("show environment all")
+	// 'show environment all' is IOS/IOS-XE syntax and does not exist on NX-OS.
+	// NX-OS exposes the same information (power, fan, temperature) via
+	// plain 'show environment'.
+	cmd := "show environment all"
+	if client.OSType == rpc.NXOS {
+		cmd = "show environment"
+	}
+
+	out, err := client.RunCommand(cmd)
 	if err != nil {
 		return err
 	}

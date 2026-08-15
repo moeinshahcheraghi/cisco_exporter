@@ -55,6 +55,10 @@ func (*factsCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- memoryTotalDesc
 	ch <- memoryUsedDesc
 	ch <- memoryFreeDesc
+	ch <- cpuOneMinuteDesc
+	ch <- cpuFiveSecondsDesc
+	ch <- cpuInterruptsDesc
+	ch <- cpuFiveMinutesDesc
 }
 
 // CollectVersion collects version informations from Cisco
@@ -72,7 +76,7 @@ func (c *factsCollector) CollectVersion(client *rpc.Client, ch chan<- prometheus
 	return nil
 }
 
-// CollectMemory collects memory informations from Cisco
+// CollectMemory collects memory informations from Cisco (IOS / IOS-XE)
 func (c *factsCollector) CollectMemory(client *rpc.Client, ch chan<- prometheus.Metric, labelValues []string) error {
 	out, err := client.RunCommand("show process memory")
 	if err != nil {
@@ -91,7 +95,7 @@ func (c *factsCollector) CollectMemory(client *rpc.Client, ch chan<- prometheus.
 	return nil
 }
 
-// CollectCPU collects cpu informations from Cisco
+// CollectCPU collects cpu informations from Cisco (IOS / IOS-XE)
 func (c *factsCollector) CollectCPU(client *rpc.Client, ch chan<- prometheus.Metric, labelValues []string) error {
 	out, err := client.RunCommand("show process cpu")
 	if err != nil {
@@ -108,12 +112,46 @@ func (c *factsCollector) CollectCPU(client *rpc.Client, ch chan<- prometheus.Met
 	return nil
 }
 
+// CollectSystemResources collects both CPU and Memory in a single command (NX-OS)
+func (c *factsCollector) CollectSystemResources(client *rpc.Client, ch chan<- prometheus.Metric, labelValues []string) error {
+	out, err := client.RunCommand("show system resources")
+	if err != nil {
+		return err
+	}
+	cpu, memItems, err := c.ParseSystemResources(out)
+	if err != nil {
+		return err
+	}
+
+	ch <- prometheus.MustNewConstMetric(cpuOneMinuteDesc, prometheus.GaugeValue, cpu.OneMinute, labelValues...)
+	ch <- prometheus.MustNewConstMetric(cpuFiveSecondsDesc, prometheus.GaugeValue, cpu.FiveSeconds, labelValues...)
+	ch <- prometheus.MustNewConstMetric(cpuInterruptsDesc, prometheus.GaugeValue, cpu.Interrupts, labelValues...)
+	ch <- prometheus.MustNewConstMetric(cpuFiveMinutesDesc, prometheus.GaugeValue, cpu.FiveMinutes, labelValues...)
+
+	for _, item := range memItems {
+		l := append(labelValues, item.Type)
+		ch <- prometheus.MustNewConstMetric(memoryTotalDesc, prometheus.GaugeValue, item.Total, l...)
+		ch <- prometheus.MustNewConstMetric(memoryUsedDesc, prometheus.GaugeValue, item.Used, l...)
+		ch <- prometheus.MustNewConstMetric(memoryFreeDesc, prometheus.GaugeValue, item.Free, l...)
+	}
+	return nil
+}
+
 // Collect collects metrics from Cisco
 func (c *factsCollector) Collect(client *rpc.Client, ch chan<- prometheus.Metric, labelValues []string) error {
 	err := c.CollectVersion(client, ch, labelValues)
 	if client.Debug && err != nil {
 		log.Printf("CollectVersion for %s: %s\n", labelValues[0], err.Error())
 	}
+
+	if client.OSType == rpc.NXOS {
+		err = c.CollectSystemResources(client, ch, labelValues)
+		if client.Debug && err != nil {
+			log.Printf("CollectSystemResources for %s: %s\n", labelValues[0], err.Error())
+		}
+		return nil
+	}
+
 	err = c.CollectMemory(client, ch, labelValues)
 	if client.Debug && err != nil {
 		log.Printf("CollectMemory for %s: %s\n", labelValues[0], err.Error())
